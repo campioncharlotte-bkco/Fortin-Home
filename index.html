@@ -686,7 +686,8 @@ function renderPoint(){
      <button class="tab ${S.onglet==='autre'?'on':''}" onclick="setOnglet('autre')">Pour ${esc(autre().nom)}</button>`;
   $('k-ouv').textContent=l.length;
   $('k-ret').textContent=l.filter(i=>{const j=jours(i.echeance);return j!==null&&j<0;}).length;
-  $('k-fait').textContent=visibles().filter(i=>i.statut==='Fait'&&i.date_cloture&&
+  /* Le compteur compte exactement ce que la liste affichera : le périmètre de l'onglet. */
+  $('k-fait').textContent=faitsDuLot().filter(i=>i.date_cloture&&
     (Date.now()-new Date(i.date_cloture))<30*86400000).length;
 
   ['ouv','ret','fait'].forEach(k=>$('kpi-'+k).classList.toggle('on',S.kpi===k));
