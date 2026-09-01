@@ -432,7 +432,9 @@ const MOTS = {
   admin:['papier','dossier','declaration','impot','assurance','mutuelle','contrat','resilier','abonnement','carte grise','passeport','carte identite','inscription','mairie','courrier','facture'],
   argent:['budget','virement','credit','pret','banque','placement','epargne','remboursement','devis prix','compta'],
   maison:['maison','travaux','plombier','electricien','peinture','chantier','cuisine','salle de bain','chaudiere','fuite','menage','reparer','monter','installer','architecte','permis'],
-  courses:['courses','acheter','commander','magasin','drive','pharmacie','pressing','stock','frigo','lessive'],
+  courses:['courses','acheter','commander','magasin','drive','pharmacie','pressing','stock','frigo',
+    'lessive','aller chercher','chercher a manger','a manger','nourriture','croquettes','provisions',
+    'supermarche','boulangerie','boucher','pain','recharger'],
   famille:['anniversaire','cadeau','inviter','diner','famille','amis','parents','ecole','enfants',
     'baby','bbsitting','baby sitting','babysitting','garde','nounou','nourrice','creche','filleul',
     'neveu','niece','frere','soeur','beau pere','belle mere','cousin','bapteme','mariage'],
@@ -514,13 +516,19 @@ async function analyser(texte){
     utilisateurs:S.users.map(u=>({id:u.id,nom:u.nom})),
     moi:S.moi?{id:S.moi.id,nom:S.moi.nom}:null,
     categories:CATS.map(c=>({id:c.id,nom:c.nom})) };
+  let err='';
   try{
     const r=await fetch(API_PARSE,{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({message:texte,contexte})});
-    if(r.ok){ const j=await r.json();
-      if(j.sujets && j.sujets.length) return {source:'ia',sujets:j.sujets.map(nettoie)}; }
-  }catch(e){}
-  return {source:'local',sujets:analyseLocale(texte)};
+    if(r.ok){
+      const j=await r.json();
+      if(j.sujets && j.sujets.length) return {source:'ia',sujets:j.sujets.map(nettoie)};
+      err='réponse vide du serveur';
+    } else {
+      err='HTTP '+r.status+' — '+(await r.text()).slice(0,160);
+    }
+  }catch(e){ err='réseau : '+e.message; }
+  return {source:'local',sujets:analyseLocale(texte),err};
 }
 
 /* ============================================================
@@ -599,7 +607,10 @@ async function envoyer(){
   S.chat.pop();
   if(!res.sujets.length) S.chat.push({role:'app',texte:"Je n'ai pas compris. Reformule en une phrase."});
   else{
-    S.chat.push({role:'app',texte:res.sujets.length>1?`J'y vois ${res.sujets.length} choses à faire.`:"Voilà ce que j'en comprends."});
+    const entete = res.source==='local'
+      ? "Analyse hors ligne — vérifie la catégorie.\n" + (res.err||'')
+      : (res.sujets.length>1 ? `J'y vois ${res.sujets.length} choses à faire.` : "Voilà ce que j'en comprends.");
+    S.chat.push({role:'app',texte:entete});
     res.sujets.forEach(s=>S.chat.push({role:'carte',s}));
   }
   renderChat();
