@@ -65,6 +65,8 @@ h1,h2{font-weight:700;letter-spacing:-.01em}
 .kpi .n{font-size:24px;font-weight:700;line-height:1}
 .kpi .l{font-size:11px;color:var(--ink-3);margin-top:4px}
 .kpi.a .n{color:var(--close)} .kpi.o .n{color:var(--open)}
+.kpi{width:100%;font:inherit}
+.kpi.on{border-color:var(--rose);box-shadow:inset 0 0 0 1px var(--rose)}
 
 .section-h{display:flex;align-items:baseline;gap:10px;margin:20px 0 9px}
 .section-h h2{font-size:16px}
@@ -213,9 +215,9 @@ textarea{min-height:76px;resize:vertical;font-size:15px}
   <section class="screen on" id="s-point">
     <div class="tabs" id="point-tabs"></div>
     <div class="kpis">
-      <div class="kpi"><div class="n" id="k-ouv">0</div><div class="l">À faire</div></div>
-      <div class="kpi a"><div class="n" id="k-ret">0</div><div class="l">En retard</div></div>
-      <div class="kpi o"><div class="n" id="k-fait">0</div><div class="l">Faits 30j</div></div>
+      <button class="kpi"   id="kpi-ouv"  onclick="setKpi('ouv')"><div class="n" id="k-ouv">0</div><div class="l">À faire</div></button>
+      <button class="kpi a" id="kpi-ret"  onclick="setKpi('ret')"><div class="n" id="k-ret">0</div><div class="l">En retard</div></button>
+      <button class="kpi o" id="kpi-fait" onclick="setKpi('fait')"><div class="n" id="k-fait">0</div><div class="l">Faits 30j</div></button>
     </div>
     <div id="point-corps"></div>
   </section>
@@ -350,7 +352,7 @@ async function dbDelete(t,id){
    4. ÉTAT
    ============================================================ */
 let S = {moi:null,users:[],items:[],foyer:'',view:'point',onglet:'nous',
-         filtreCat:'tout',filtreStatut:'ouvert',voirFaits:false,editItem:null,actions:[],chat:[],echInit:{hz:'',iso:null}};
+         filtreCat:'tout',filtreStatut:'ouvert',voirFaits:false,kpi:null,editItem:null,actions:[],chat:[],echInit:{hz:'',iso:null}};
 
 /* ============================================================
    5. PRIORITÉ
@@ -687,15 +689,30 @@ function renderPoint(){
   $('k-fait').textContent=visibles().filter(i=>i.statut==='Fait'&&i.date_cloture&&
     (Date.now()-new Date(i.date_cloture))<30*86400000).length;
 
-  let html=`<div class="section-h"><h2>Dans l'ordre</h2><span>${l.length} chose${l.length>1?'s':''} à faire</span></div>`
-    + (l.length? l.map((it,k)=>ligneItem(it,k+1)).join('')
-      : `<div class="empty"><b>Rien à faire</b>Note quelque chose depuis Talk to me</div>`);
+  ['ouv','ret','fait'].forEach(k=>$('kpi-'+k).classList.toggle('on',S.kpi===k));
+
+  const enRetard = i=>{ const j=jours(i.echeance); return j!==null && j<0; };
+  let liste, titre, sous;
+  if(S.kpi==='ret'){       liste=l.filter(enRetard); titre='En retard'; sous='échéance dépassée'; }
+  else if(S.kpi==='fait'){ liste=faitsDuLot().filter(i=>i.date_cloture &&
+                             (Date.now()-new Date(i.date_cloture))<30*86400000);
+                           titre='Faits ces 30 jours'; sous='du plus récent'; }
+  else { liste=l; titre="Dans l'ordre"; sous=l.length+' chose'+(l.length>1?'s':'')+' à faire'; }
+
+  let html=`<div class="section-h"><h2>${titre}</h2><span>${sous}</span>`
+    + (S.kpi? `<button class="tab" style="margin-left:auto" onclick="setKpi(null)">Tout revoir</button>`:'')
+    + `</div>`
+    + (liste.length? liste.map((it,k)=>ligneItem(it,S.kpi==='fait'?0:k+1)).join('')
+      : `<div class="empty"><b>Rien à faire</b>${S.kpi?'Aucune tâche dans ce filtre':'Note quelque chose depuis Talk to me'}</div>`);
+
+  if(S.kpi==='fait'){ $('point-corps').innerHTML=html; return; }   // la liste se suffit à elle-même
   html += blocFaits();
   html += `<button class="btn sec" onclick="openItem(null,false,${S.onglet==='moi'&&S.moi?S.moi.id:'null'})">Ajouter</button>`;
   $('point-corps').innerHTML=html;
 }
-function setOnglet(v){ S.onglet=v; S.voirFaits=false; renderPoint(); window.scrollTo(0,0); }
+function setOnglet(v){ S.onglet=v; S.voirFaits=false; S.kpi=null; renderPoint(); window.scrollTo(0,0); }
 function basculeFaits(){ S.voirFaits=!S.voirFaits; renderPoint(); }
+function setKpi(k){ S.kpi = (S.kpi===k? null : k); renderPoint(); window.scrollTo(0,0); }
 /* Ce qui est fait, dans le même périmètre que l'onglet affiché. */
 function faitsDuLot(){
   const f=visibles().filter(i=>i.statut==='Fait');
