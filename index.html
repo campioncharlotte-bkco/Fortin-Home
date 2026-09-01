@@ -667,7 +667,8 @@ function lot(){
   /* « Pour moi » = ce qui m'est confié, mes tâches privées comprises. */
   if(S.onglet==='moi')   return o.filter(i=>S.moi && (i.assigne_id==S.moi.id || (i.prive && i.auteur_id==S.moi.id)));
   if(S.onglet==='autre') return o.filter(i=>i.assigne_id==autre().id);
-  return o.filter(i=>!i.prive);
+  /* « Nous » : ce que ni l'un ni l'autre ne s'est encore attribué. */
+  return o.filter(i=>!i.prive && !i.assigne_id);
 }
 function renderPoint(){
   const l=trie(lot());
