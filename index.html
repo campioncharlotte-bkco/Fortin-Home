@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#C97C92">
+<title>Fortin's Home</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Home">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<style>
+/* ===================================================================
+   TOKENS — rose pour l'identité, kaki pour les actions
+   =================================================================== */
+:root{
+  --rose:#C97C92;      --rose-2:#A85D74;   --rose-pale:#F8EBEF;
+  --kaki:#6E7A45;      --kaki-2:#5B663A;   --kaki-pale:#EDF0E2;
+  --paper:#F7F4F0;     --card:#FFFFFF;
+  --ink:#2A2622;       --ink-2:#5D564F;    --ink-3:#9A928A;
+  --line:#E7E1DB;
+  --open:#4F7A3F;      --open-bg:#E7F1E2;
+  --close:#B4463F;     --close-bg:#FBE9E7;
+  --warn:#A9772A;      --warn-bg:#FBF0DC;
+  --cool:#4A6FA5;      --cool-bg:#E6EDF7;
+  --off:#6B6560;       --off-bg:#EFEBE6;
+  --r:14px;
+  --bas:calc(58px + env(safe-area-inset-bottom));
+  --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Inter",sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:var(--font);background:var(--paper);color:var(--ink);font-size:15px;line-height:1.45;
+  -webkit-font-smoothing:antialiased;overscroll-behavior-y:none;padding-bottom:calc(var(--bas) + 18px)}
+button{font-family:inherit;font-size:inherit;cursor:pointer;border:none;background:none;color:inherit}
+input,select,textarea{font-family:inherit;font-size:16px;color:var(--ink)}
+h1,h2{font-weight:700;letter-spacing:-.01em}
+:focus-visible{outline:2px solid var(--kaki);outline-offset:2px;border-radius:6px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+.topbar{position:sticky;top:0;z-index:40;background:var(--rose);color:#fff;
+  padding:calc(11px + env(safe-area-inset-top)) 16px 11px;display:flex;align-items:center;gap:12px}
+.topbar h1{font-size:20px}
+.topbar .sub{font-size:12px;color:rgba(255,255,255,.95);margin-left:auto;text-align:right;line-height:1.3}
+.topbar .out{color:rgba(255,255,255,.9);font-size:17px;padding:2px 0 2px 6px}
+.wrap{padding:14px 14px 0;max-width:760px;margin:0 auto}
+.screen{display:none}
+.screen.on{display:block;animation:fade .16s ease}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+
+.nav{position:fixed;left:0;right:0;bottom:0;z-index:50;display:flex;background:var(--card);
+  border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
+.nav button{flex:1;padding:8px 2px 9px;display:flex;flex-direction:column;align-items:center;gap:3px;
+  color:var(--ink-3);font-size:11px;font-weight:500}
+.nav button .g{font-size:18px;line-height:1}
+.nav button.on{color:var(--rose);font-weight:600}
+.fab{position:fixed;right:16px;bottom:calc(var(--bas) + 16px);z-index:55;width:54px;height:54px;
+  border-radius:50%;background:var(--kaki);color:#fff;font-size:24px;line-height:1;
+  box-shadow:0 6px 18px rgba(110,122,69,.34);display:flex;align-items:center;justify-content:center}
+.fab.hide{display:none}
+
+.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:12px 8px;text-align:center}
+.kpi .n{font-size:24px;font-weight:700;line-height:1}
+.kpi .l{font-size:11px;color:var(--ink-3);margin-top:4px}
+.kpi.a .n{color:var(--close)} .kpi.o .n{color:var(--open)}
+
+.section-h{display:flex;align-items:baseline;gap:10px;margin:20px 0 9px}
+.section-h h2{font-size:16px}
+.section-h span{font-size:12px;color:var(--ink-3)}
+.muted{color:var(--ink-3);font-size:13px}
+.empty{padding:26px 16px;text-align:center;color:var(--ink-3);font-size:13.5px;
+  background:var(--card);border:1px dashed var(--line);border-radius:var(--r)}
+.empty b{display:block;color:var(--ink);font-size:15px;font-weight:600;margin-bottom:4px}
+
+.item{display:flex;background:var(--card);border:1px solid var(--line);border-radius:var(--r);
+  overflow:hidden;margin-bottom:8px;width:100%;text-align:left;align-items:stretch}
+.item .rail{width:5px;flex:0 0 5px;background:var(--ink-3)}
+.item .rank{flex:0 0 32px;display:flex;align-items:center;justify-content:center;
+  font-size:14px;font-weight:700;color:var(--ink-3);border-right:1px solid var(--line)}
+.item .body{flex:1;padding:10px 12px;min-width:0}
+.item .t{font-weight:500;font-size:14.5px;line-height:1.3;word-break:break-word}
+.item .meta{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
+.item.done .t{color:var(--ink-3);text-decoration:line-through}
+.chip{font-size:10.5px;padding:2px 8px;border-radius:999px;background:var(--off-bg);color:var(--off);
+  white-space:nowrap;font-weight:500}
+.chip.late{background:var(--close-bg);color:var(--close)}
+.chip.p1{background:var(--close-bg);color:var(--close)}
+.chip.now{background:var(--cool-bg);color:var(--cool)}
+.chip.blk{background:var(--warn-bg);color:var(--warn)}
+.chip.ok{background:var(--open-bg);color:var(--open)}
+.chip.moi{background:var(--rose-pale);color:var(--rose-2)}
+
+.tabs{display:flex;gap:6px;margin:0 0 12px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+.tabs::-webkit-scrollbar{display:none}
+@media(min-width:700px){.tabs{flex-wrap:wrap;overflow-x:visible;row-gap:6px}}
+.tab{padding:7px 13px;border-radius:999px;background:var(--card);border:1px solid var(--line);
+  font-size:13px;color:var(--ink-2);white-space:nowrap}
+.tab.on{background:var(--rose);border-color:var(--rose);color:#fff;font-weight:600}
+
+/* ---- Talk to me ---- */
+#s-capture{display:none}
+#s-capture.on{display:block;padding-bottom:82px}
+.bulle{max-width:88%;padding:10px 13px;border-radius:16px;margin-bottom:9px;font-size:14.5px;
+  line-height:1.45;word-break:break-word;white-space:pre-wrap}
+.bulle.moi{background:var(--rose);color:#fff;margin-left:auto;border-bottom-right-radius:5px;font-weight:500}
+.bulle.app{background:var(--card);border:1px solid var(--line);border-bottom-left-radius:5px;color:var(--ink-2)}
+.bulle.app b{color:var(--ink)}
+.bulle.app.fait{background:var(--kaki-pale);border-color:#CBD4B2;color:var(--kaki-2)}
+.bulle.app.fait b{color:var(--kaki-2)}
+.carte{background:var(--card);border:1px solid var(--kaki);border-radius:16px;border-bottom-left-radius:5px;
+  padding:13px;margin-bottom:10px}
+.carte input.ct{width:100%;background:transparent;border:none;padding:0 0 4px;font-weight:600;font-size:15px}
+.carte input.ct:focus{outline:none;border-bottom:1px solid var(--kaki)}
+.carte .grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.carte select{background:var(--paper);border:1px solid var(--line);border-radius:9px;
+  padding:8px 9px;font-size:13px;width:100%}
+.carte .doute{border-color:var(--kaki);background:var(--kaki-pale)}
+.carte .acts2{display:flex;gap:7px;margin-top:11px}
+.carte .acts2 button{flex:1;padding:10px;border-radius:10px;font-size:13.5px;font-weight:600}
+.carte .ok2{background:var(--kaki);color:#fff}
+.carte .no2{background:var(--off-bg);color:var(--ink-2);flex:0 0 40%}
+.saisie{position:fixed;left:0;right:0;bottom:var(--bas);z-index:45;display:flex;gap:8px;align-items:flex-end;
+  padding:9px 14px 10px;border-top:1px solid var(--line);background:var(--paper);
+  box-shadow:0 -6px 16px rgba(42,38,34,.06)}
+@media(min-width:700px){.saisie{max-width:760px;margin:0 auto}}
+.saisie textarea{flex:1;min-height:48px;max-height:140px;border-radius:14px;padding:13px 14px;resize:none;
+  background:var(--card);border:1px solid var(--line)}
+.saisie button{flex:0 0 48px;height:48px;border-radius:50%;background:var(--kaki);color:#fff;font-size:19px;
+  display:flex;align-items:center;justify-content:center}
+.saisie button.mic{background:var(--card);border:1px solid var(--line);color:var(--ink-2)}
+.saisie button.mic.rec{background:var(--close);border-color:var(--close);color:#fff}
+
+/* ---- Formulaire ---- */
+.sheet{position:fixed;inset:0;z-index:90;background:rgba(42,38,34,.45);display:none;align-items:flex-end}
+.sheet.on{display:flex}
+.sheet .card{background:var(--paper);width:100%;max-height:94vh;overflow-y:auto;
+  border-radius:18px 18px 0 0;padding:16px 16px calc(24px + env(safe-area-inset-bottom));animation:up .2s ease}
+@media(min-width:700px){.sheet{align-items:center;justify-content:center}
+  .sheet .card{max-width:580px;border-radius:var(--r);animation:none}}
+@keyframes up{from{transform:translateY(26px)}to{transform:translateY(0)}}
+.sheet h2{font-size:18px}
+.sheet .hd{display:flex;align-items:center;margin-bottom:12px}
+.sheet .hd button{color:var(--ink-3);font-size:14px;margin-left:auto;padding:4px 6px}
+label{display:block;font-size:12px;color:var(--ink-2);margin:12px 0 5px;font-weight:500}
+input,select,textarea{width:100%;background:var(--card);border:1px solid var(--line);border-radius:10px;
+  padding:11px 12px;outline:none}
+input:focus,select:focus,textarea:focus{border-color:var(--kaki)}
+textarea{min-height:76px;resize:vertical;font-size:15px}
+.row{display:flex;gap:9px}.row>*{flex:1}
+.seg{display:flex;gap:6px;flex-wrap:wrap}
+.seg button{flex:1;min-width:72px;padding:9px 6px;border-radius:10px;background:var(--card);
+  border:1px solid var(--line);font-size:12.5px;color:var(--ink-2)}
+.seg button.on{border-color:var(--rose);background:var(--rose-pale);color:var(--rose-2);font-weight:600}
+.btn{display:block;width:100%;padding:13px;border-radius:var(--r);background:var(--kaki);color:#fff;
+  font-weight:600;font-size:15px;margin-top:16px}
+.btn.sec{background:var(--card);border:1px solid var(--line);color:var(--ink)}
+.btn.del{background:var(--card);color:var(--close);border:1px solid #EFC9C5;margin-top:9px}
+.acts{margin-top:6px}
+.act{display:flex;align-items:center;gap:9px;padding:8px 0;border-bottom:1px solid var(--line);font-size:14px}
+.act input[type=checkbox]{width:19px;height:19px;flex:0 0 19px;accent-color:var(--kaki)}
+.act.done span{color:var(--ink-3);text-decoration:line-through}
+.act button{margin-left:auto;color:var(--ink-3);font-size:17px;padding:0 4px}
+
+#login{position:fixed;inset:0;z-index:100;background:var(--rose);color:#fff;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;padding:24px;text-align:center}
+#login .mark{font-size:46px;font-weight:700;letter-spacing:.10em;line-height:1;font-family:Georgia,'Times New Roman',serif}
+#login .mark em{font-style:normal;display:block;font-size:13px;font-weight:600;letter-spacing:.28em;
+  color:rgba(255,255,255,.94);margin-top:6px}
+#login p{color:rgba(255,255,255,.94);font-size:13.5px;margin:12px 0 24px}
+#login input{max-width:200px;text-align:center;font-size:22px;letter-spacing:.3em;padding:13px;
+  background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.34);color:#fff}
+#login input::placeholder{color:rgba(255,255,255,.5)}
+#login .err{font-size:13px;height:18px;margin-top:10px;color:#FFDCD8}
+.badge-mode{font-size:11px;color:rgba(255,255,255,.7);margin-top:18px;max-width:300px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(var(--bas) + 22px);background:var(--ink);
+  color:#fff;padding:10px 16px;border-radius:10px;font-size:13.5px;z-index:120;opacity:0;pointer-events:none;
+  transition:opacity .2s;box-shadow:0 6px 20px rgba(42,38,34,.25)}
+.toast.on{opacity:1}
+.searchbar{display:flex;gap:8px;margin-bottom:10px}
+.searchbar input{flex:1}
+</style>
+</head>
+<body>
+
+<div id="login">
+  <div class="mark">CLF<em>FORTIN'S HOME</em></div>
+  <p>Notre organisation à deux</p>
+  <input id="pin" type="password" inputmode="numeric" maxlength="6" placeholder="Code" autocomplete="current-password">
+  <div class="err" id="pinErr"></div>
+  <div class="badge-mode" id="mode"></div>
+</div>
+
+<div class="topbar">
+  <h1 id="title">Le Point</h1>
+  <div class="sub" id="subtitle"></div>
+  <button class="out" onclick="logout()" aria-label="Quitter">⏻</button>
+</div>
+
+<div class="wrap">
+
+  <section class="screen" id="s-capture">
+    <div id="chat-flux"></div>
+    <div class="saisie">
+      <button class="mic" id="btn-mic" onclick="dicter()" aria-label="Dicter">🎙</button>
+      <textarea id="msg" rows="1" placeholder="Dis ce que tu as en tête…"></textarea>
+      <button onclick="envoyer()" aria-label="Envoyer">↑</button>
+    </div>
+  </section>
+
+  <section class="screen on" id="s-point">
+    <div class="tabs" id="point-tabs"></div>
+    <div class="kpis">
+      <div class="kpi"><div class="n" id="k-ouv">0</div><div class="l">À faire</div></div>
+      <div class="kpi a"><div class="n" id="k-ret">0</div><div class="l">En retard</div></div>
+      <div class="kpi o"><div class="n" id="k-fait">0</div><div class="l">Faits 30j</div></div>
+    </div>
+    <div id="point-corps"></div>
+  </section>
+
+  <section class="screen" id="s-liste">
+    <div class="searchbar">
+      <input id="q" placeholder="Rechercher…" oninput="renderListe()">
+      <button class="tab" onclick="exportCSV()">Export</button>
+    </div>
+    <div class="tabs" id="liste-filtres"></div>
+    <div id="liste-corps"></div>
+  </section>
+
+</div>
+
+<nav class="nav">
+  <button data-v="capture" onclick="go('capture')"><span class="g">✎</span>Talk to me</button>
+  <button data-v="point" class="on" onclick="go('point')"><span class="g">◈</span>Le Point</button>
+  <button data-v="liste" onclick="go('liste')"><span class="g">≡</span>Priorités</button>
+</nav>
+<button class="fab" id="fab" onclick="go('capture')" aria-label="Noter">✎</button>
+
+<div class="sheet" id="sh-item"><div class="card">
+  <div class="hd"><h2 id="item-h">Nouveau sujet</h2><button onclick="closeSheet('sh-item')">Fermer</button></div>
+  <label>Quoi</label>
+  <input id="f-titre" placeholder="Ex : appeler le plombier">
+  <div class="row">
+    <div><label>Catégorie</label><select id="f-cat"></select></div>
+    <div><label>À faire</label><select id="f-echeance"></select></div>
+  </div>
+  <label>Priorité</label>
+  <div class="seg" id="f-prio"></div>
+  <label>Statut</label>
+  <div class="seg" id="f-statut"></div>
+  <div class="row">
+    <div><label>Pour qui</label><select id="f-assigne"></select></div>
+    <div><label>Visible par</label><select id="f-prive">
+      <option value="0">Nous deux</option><option value="1">Moi seule</option></select></div>
+  </div>
+  <label>Détail</label>
+  <textarea id="f-desc" placeholder="Ce qu'il faut savoir…"></textarea>
+  <label>Étapes</label>
+  <div class="acts" id="f-actions"></div>
+  <div class="row" style="margin-top:8px">
+    <input id="f-newact" placeholder="Ajouter une étape">
+    <button class="tab" style="flex:0 0 auto" onclick="addAction()">Ajouter</button>
+  </div>
+  <button class="btn" onclick="saveItem()">Enregistrer</button>
+  <button class="btn sec" id="b-clore" onclick="cloreItem()">C'est fait</button>
+  <button class="btn del" id="b-suppr" onclick="delItem()">Supprimer</button>
+</div></div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => (s==null?'':s.toString()).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+/* ============================================================
+   1. CONFIGURATION — à remplir après création du projet Supabase
+   ============================================================ */
+const SUPABASE_URL = 'https://swpjwywljhwcsmbazceq.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN3cGp3eXdsamh3Y3NtYmF6Y2VxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgyNjk5NDMsImV4cCI6MjEwMzg0NTk0M30.xOY3I0ULU1T1b2NuwASClDOzA-fB7Zw6irNNOIEkG6E';
+const PIN_SECOURS  = '1111';
+const API_PARSE    = '/api/parse';
+
+/* ============================================================
+   2. RÉFÉRENTIELS
+   ============================================================ */
+const CATS = [
+  {id:'maison',    nom:'Maison / travaux',   poids:14},
+  {id:'courses',   nom:'Courses / intendance',poids:8},
+  {id:'admin',     nom:'Administratif',      poids:16},
+  {id:'argent',    nom:'Argent / budget',    poids:14},
+  {id:'rdv',       nom:'Rendez-vous',        poids:18},
+  {id:'famille',   nom:'Famille / amis',     poids:10},
+  {id:'sorties',   nom:'Sorties / voyages',  poids:6},
+  {id:'exterieur', nom:'Jardin / voiture',   poids:8}
+];
+const CAT = Object.fromEntries(CATS.map(c=>[c.id,c]));
+const PRIOS   = [{v:1,l:'Urgent'},{v:2,l:'Normal'},{v:3,l:'Un jour'}];
+const STATUTS = ['À faire','En cours','En attente','Fait'];
+const HORIZONS=[['','Sans date'],['jour',"Aujourd'hui"],['semaine','Cette semaine'],['mois','Ce mois-ci']];
+
+/* ============================================================
+   3. STOCKAGE
+   ============================================================ */
+const CONFIGURE = !SUPABASE_URL.includes('XXXX');
+const SB = CONFIGURE ? supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+let mem = {home_sujets:[], home_utilisateurs:[{id:1,nom:'Charlotte',pin:'1111',actif:true},
+                                              {id:2,nom:'Louis',pin:'2222',actif:true}]};
+function lsGet(){ try{ const r=localStorage.getItem('fortin_home'); if(r) mem=JSON.parse(r); }catch(e){} }
+function lsSet(){ try{ localStorage.setItem('fortin_home',JSON.stringify(mem)); }catch(e){} }
+
+async function dbList(t){
+  if(SB){ const {data,error}=await SB.from(t).select('*'); if(error) throw error; return data||[]; }
+  return mem[t].slice();
+}
+async function dbInsert(t,row){
+  if(SB){ const {data,error}=await SB.from(t).insert(row).select().single(); if(error) throw error; return data; }
+  const r={...row,id:Date.now()+Math.floor(Math.random()*999),created_at:new Date().toISOString()};
+  mem[t].push(r); lsSet(); return r;
+}
+async function dbUpdate(t,id,patch){
+  if(SB){ const {data,error}=await SB.from(t).update(patch).eq('id',id).select().single(); if(error) throw error; return data; }
+  const i=mem[t].findIndex(x=>x.id==id); if(i>=0){ mem[t][i]={...mem[t][i],...patch}; lsSet(); return mem[t][i]; }
+}
+async function dbDelete(t,id){
+  if(SB){ const {error}=await SB.from(t).delete().eq('id',id); if(error) throw error; return; }
+  mem[t]=mem[t].filter(x=>x.id!=id); lsSet();
+}
+
+/* ============================================================
+   4. ÉTAT
+   ============================================================ */
+let S = {moi:null,users:[],items:[],view:'point',onglet:'nous',
+         filtreCat:'tout',filtreStatut:'ouvert',editItem:null,actions:[],chat:[],echInit:{hz:'',iso:null}};
+
+/* ============================================================
+   5. PRIORITÉ
+   ============================================================ */
+function jours(d){ if(!d) return null;
+  const a=new Date(d+'T00:00:00'), b=new Date(); b.setHours(0,0,0,0);
+  return Math.round((a-b)/86400000);
+}
+function anciennete(it){ return it.created_at? Math.max(0,Math.round((Date.now()-new Date(it.created_at))/86400000)) : 0; }
+function score(it){
+  if(it.statut==='Fait') return -1;
+  let s = it.priorite==1?100:it.priorite==2?60:25;
+  s += (CAT[it.categorie]?CAT[it.categorie].poids:0);
+  const j=jours(it.echeance);
+  if(j!==null){
+    if(j<0) s += 80 + Math.min(-j,25);
+    else if(j<=1) s += 55; else if(j<=3) s += 38; else if(j<=7) s += 20;
+  }
+  s += Math.min(anciennete(it),30);
+  if(it.statut==='En cours') s += 12;
+  if(it.statut==='En attente') s -= 8;
+  return Math.round(s);
+}
+function raisons(it){
+  const out=[]; const j=jours(it.echeance);
+  if(j!==null && j<0) out.push(['late','Retard '+(-j)+' j']);
+  else if(j===0) out.push(['late',"Aujourd'hui"]);
+  else if(j!==null && j<=3) out.push(['blk','Dans '+j+' j']);
+  if(it.priorite==1) out.push(['p1','Urgent']);
+  if(it.statut==='En cours') out.push(['now','En cours']);
+  if(it.statut==='En attente') out.push(['','En attente']);
+  if(it.statut==='Fait') out.push(['ok','Fait']);
+  const a=anciennete(it);
+  if(a>=30 && it.statut!=='Fait') out.push(['','Depuis '+a+' j']);
+  return out;
+}
+function couleur(it){
+  if(it.statut==='Fait') return 'var(--open)';
+  const j=jours(it.echeance);
+  if(it.priorite==1 || (j!==null&&j<0)) return 'var(--close)';
+  if(j!==null&&j<=3) return 'var(--warn)';
+  if(it.statut==='En cours') return 'var(--cool)';
+  return 'var(--ink-3)';
+}
+const nomUser  = id => { const u=S.users.find(x=>x.id==id); return u?u.nom:null; };
+const autre    = ()=> S.users.find(u=>!S.moi||u.id!=S.moi.id) || {id:0,nom:'L\'autre'};
+const pourMoi  = i => !i.prive || (S.moi && i.auteur_id==S.moi.id);
+const partages = ()=> S.items.filter(i=>!i.prive);
+const visibles = ()=> S.items.filter(pourMoi);
+const ouverts  = ()=> visibles().filter(i=>i.statut!=='Fait');
+const trie     = arr => arr.slice().sort((a,b)=>score(b)-score(a));
+
+/* ============================================================
+   6. DATES PAR HORIZON
+   ============================================================ */
+function jourISO(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function dateHorizon(hz){
+  const d=new Date(); d.setHours(0,0,0,0);
+  if(hz==='jour') return jourISO(d);
+  if(hz==='semaine'){ d.setDate(d.getDate()+((7-d.getDay())%7)); return jourISO(d); }
+  if(hz==='mois') return jourISO(new Date(d.getFullYear(),d.getMonth()+1,0));
+  return null;
+}
+function horizonDe(v){
+  if(!v) return '';
+  const j=jours(v);
+  if(j===null||j<=0) return 'jour';
+  if(v<=dateHorizon('semaine')) return 'semaine';
+  return 'mois';
+}
+const optionsHorizon = v => HORIZONS.map(([k,l])=>`<option value="${k}" ${k===v?'selected':''}>${l}</option>`).join('');
+
+/* ============================================================
+   7. ANALYSE DU LANGAGE NATUREL
+   ============================================================ */
+const norm = s => (s||'').toString().toLowerCase().normalize('NFD')
+  .replace(/[\u0300-\u036f]/g,'').replace(/[’']/g,' ').replace(/\s+/g,' ').trim();
+
+const MOTS = {
+  rdv:['rdv','rendez vous','medecin','dentiste','coiffeur','veterinaire','garage','notaire','banque rdv','kine','ophtalmo','controle technique'],
+  admin:['papier','dossier','declaration','impot','assurance','mutuelle','contrat','resilier','abonnement','carte grise','passeport','carte identite','inscription','mairie','courrier','facture'],
+  argent:['budget','virement','credit','pret','banque','placement','epargne','remboursement','devis prix','compta'],
+  maison:['maison','travaux','plombier','electricien','peinture','chantier','cuisine','salle de bain','chaudiere','fuite','menage','reparer','monter','installer','architecte','permis'],
+  courses:['courses','acheter','commander','magasin','drive','pharmacie','pressing','stock','frigo','lessive'],
+  famille:['anniversaire','cadeau','inviter','diner','famille','amis','parents','appeler','ecole','enfants','baby'],
+  sorties:['week end','weekend','vacances','voyage','reserver','hotel','billet','restaurant','sortie','cinema','concert'],
+  exterieur:['jardin','tondre','haie','terrasse','piscine','voiture','pneus','revision','vidange','lavage','garage voiture','plantes']
+};
+function detectCat(t){
+  let best=null, sc=0;
+  for(const [cat,mots] of Object.entries(MOTS)){
+    let n=0; mots.forEach(m=>{ if(t.includes(m)) n += m.length>6?2:1; });
+    if(n>sc){ sc=n; best=cat; }
+  }
+  return best||'maison';
+}
+function detectPrio(t){
+  if(/urgent|vite|au plus vite|aujourd hui|ce soir|imperatif|absolument/.test(t)) return 1;
+  if(/un jour|plus tard|quand on aura le temps|pas presse|penser a/.test(t)) return 3;
+  return 2;
+}
+function detectEcheance(t){
+  const now=new Date(); const add=n=>{ const d=new Date(now); d.setDate(d.getDate()+n); return jourISO(d); };
+  if(/aujourd hui|ce soir|dans la journee/.test(t)) return add(0);
+  if(/apres demain/.test(t)) return add(2);
+  if(/demain/.test(t)) return add(1);
+  if(/semaine prochaine/.test(t)) return add(7);
+  if(/cette semaine|avant le week end|fin de semaine/.test(t)) return dateHorizon('semaine');
+  if(/ce mois|dans le mois|avant la fin du mois/.test(t)) return dateHorizon('mois');
+  const JJ=['dimanche','lundi','mardi','mercredi','jeudi','vendredi','samedi'];
+  for(let i=0;i<7;i++){
+    if(new RegExp('(^|[^a-z])'+JJ[i]).test(t)){
+      const d=new Date(now); const delta=((i-d.getDay()+7)%7)||7; d.setDate(d.getDate()+delta); return jourISO(d);
+    }
+  }
+  const m=t.match(/(\d{1,2})[\/\-](\d{1,2})(?:[\/\-](\d{2,4}))?/);
+  if(m){ const an=m[3]?(m[3].length==2?'20'+m[3]:m[3]):now.getFullYear();
+    return an+'-'+String(m[2]).padStart(2,'0')+'-'+String(m[1]).padStart(2,'0'); }
+  return null;
+}
+function analyseLocale(texte){
+  const bouts=texte.split(/\n+|\s*;\s*|\s+et aussi\s+/i).map(x=>x.trim()).filter(x=>x.length>3);
+  return (bouts.length?bouts:[texte]).map(bout=>{
+    const t=norm(bout);
+    const prive=/(^| )(perso|personnel|pour moi seule|prive)( |$)/.test(t);
+    let assigne=null;
+    if(S.moi && /(^| )(je dois|il faut que je|je m en occupe|je vais)( |$)/.test(t)) assigne=S.moi.id;
+    S.users.forEach(u=>{
+      const n=norm(u.nom).split(' ')[0];
+      if(n.length>=3 && new RegExp('(^|[^a-z])'+n+'([^a-z]|$)').test(t)) assigne=u.id;
+    });
+    let titre=bout.trim().replace(/^./,c=>c.toUpperCase()); let desc=null;
+    if(titre.length>90){ desc=titre; titre=titre.slice(0,87).trim()+'…'; }
+    return {titre, categorie:detectCat(t), priorite:detectPrio(t), statut:'À faire',
+            echeance:detectEcheance(t), assigne_id:assigne, prive, description:desc, actions:[]};
+  });
+}
+function nettoie(s){
+  const dt = d => (d && /^\d{4}-\d{2}-\d{2}$/.test(d)) ? d : null;
+  return {
+    titre:(s.titre||'Sujet').slice(0,120),
+    categorie:CAT[s.categorie]?s.categorie:'maison',
+    priorite:[1,2,3].includes(+s.priorite)?+s.priorite:2,
+    statut:STATUTS.includes(s.statut)?s.statut:'À faire',
+    echeance:dt(s.echeance),
+    assigne_id:S.users.some(u=>u.id==s.assigne_id)?s.assigne_id:null,
+    prive:s.prive===true,
+    description:s.description||null,
+    actions:Array.isArray(s.actions)?s.actions.map(a=>typeof a==='string'?{texte:a,fait:false}:a):[]
+  };
+}
+async function analyser(texte){
+  const contexte={ date:jourISO(new Date()),
+    utilisateurs:S.users.map(u=>({id:u.id,nom:u.nom})),
+    moi:S.moi?{id:S.moi.id,nom:S.moi.nom}:null,
+    categories:CATS.map(c=>({id:c.id,nom:c.nom})) };
+  try{
+    const r=await fetch(API_PARSE,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({message:texte,contexte})});
+    if(r.ok){ const j=await r.json();
+      if(j.sujets && j.sujets.length) return {source:'ia',sujets:j.sujets.map(nettoie)}; }
+  }catch(e){}
+  return {source:'local',sujets:analyseLocale(texte)};
+}
+
+/* ============================================================
+   8. TALK TO ME
+   ============================================================ */
+function bienvenue(){
+  if(S.chat.length) return;
+  S.chat.push({role:'app',texte:"Dis ce que tu as en tête, comme tu le dirais à voix haute.\nExemples : « appeler le plombier pour la fuite, urgent » · « Louis doit réserver le restaurant pour samedi ».\nJe range, tu valides."});
+}
+function renderChat(){
+  $('chat-flux').innerHTML = S.chat.map((m,i)=>{
+    if(m.role==='moi')   return `<div class="bulle moi">${esc(m.texte)}</div>`;
+    if(m.role==='app')   return `<div class="bulle app ${m.fait?'fait':''}">${m.html||esc(m.texte)}</div>`;
+    if(m.role==='carte') return carteHTML(m,i);
+    return '';
+  }).join('');
+  window.scrollTo({top:document.body.scrollHeight,behavior:'smooth'});
+}
+function carteHTML(m,i){
+  const s=m.s;
+  return `<div class="carte">
+    <input class="ct" value="${esc(s.titre)}" onchange="majCarte(${i},'titre',this.value)">
+    <div class="grid">
+      <select onchange="majCarte(${i},'categorie',this.value)">
+        ${CATS.map(c=>`<option value="${c.id}" ${c.id===s.categorie?'selected':''}>${c.nom}</option>`).join('')}
+      </select>
+      <select onchange="majCarte(${i},'priorite',this.value)">
+        ${PRIOS.map(p=>`<option value="${p.v}" ${p.v==s.priorite?'selected':''}>${p.l}</option>`).join('')}
+      </select>
+      <select onchange="majCarte(${i},'echeance',this.value)">${optionsHorizon(horizonDe(s.echeance))}</select>
+      <select onchange="majCarte(${i},'assigne_id',this.value)">
+        <option value="">Pour personne en particulier</option>
+        ${S.users.map(u=>`<option value="${u.id}" ${u.id==s.assigne_id?'selected':''}>Pour ${esc(u.nom)}</option>`).join('')}
+      </select>
+      <select onchange="majCarte(${i},'prive',this.value)">
+        <option value="0" ${s.prive?'':'selected'}>Nous deux</option>
+        <option value="1" ${s.prive?'selected':''}>Moi seule</option>
+      </select>
+    </div>
+    <div class="acts2">
+      <button class="no2" onclick="jeter(${i})">Annuler</button>
+      <button class="ok2" onclick="ranger(${i})">Ranger</button>
+    </div>
+  </div>`;
+}
+function majCarte(i,champ,val){
+  const m=S.chat[i]; if(!m) return;
+  if(champ==='priorite') val=+val;
+  if(champ==='assigne_id') val=val?+val:null;
+  if(champ==='prive') val=(val==='1');
+  if(champ==='echeance') val=dateHorizon(val);
+  m.s[champ]=val; renderChat();
+}
+function jeter(i){ S.chat.splice(i,1); renderChat(); }
+async function ranger(i){
+  const m=S.chat[i]; if(!m) return;
+  const s={...m.s}; s.auteur_id=S.moi?S.moi.id:null; s.updated_at=new Date().toISOString();
+  try{
+    const n=await dbInsert('home_sujets',s);
+    S.items.push(n);
+    const rang=trie(ouverts()).findIndex(x=>x.id==n.id)+1;
+    const pour=nomUser(n.assigne_id);
+    S.chat[i]={role:'app',fait:true,
+      html:`Rangé dans <b>${CAT[n.categorie].nom}</b>${pour?` · pour <b>${esc(pour)}</b>`:''}${n.prive?' · visible de toi seule':''}`
+           +`<br>Position <b>${rang}</b> sur ${ouverts().length}.`};
+    renderChat(); render();
+  }catch(e){ toast('Erreur : '+e.message); }
+}
+async function envoyer(){
+  const t=$('msg').value.trim(); if(!t) return;
+  $('msg').value=''; $('msg').style.height='48px';
+  S.chat.push({role:'moi',texte:t});
+  S.chat.push({role:'app',texte:'…'});
+  renderChat();
+  const res=await analyser(t);
+  S.chat.pop();
+  if(!res.sujets.length) S.chat.push({role:'app',texte:"Je n'ai pas compris. Reformule en une phrase."});
+  else{
+    S.chat.push({role:'app',texte:res.sujets.length>1?`J'y vois ${res.sujets.length} choses à faire.`:"Voilà ce que j'en comprends."});
+    res.sujets.forEach(s=>S.chat.push({role:'carte',s}));
+  }
+  renderChat();
+}
+$('msg').addEventListener('input',e=>{ e.target.style.height='48px';
+  e.target.style.height=Math.min(e.target.scrollHeight,140)+'px'; });
+$('msg').addEventListener('keydown',e=>{ if(e.key==='Enter'&&(e.metaKey||e.ctrlKey)) envoyer(); });
+
+let reco=null;
+async function dicter(){
+  const R=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!R){ toast("Utilise le micro de ton clavier"); $('msg').focus(); return; }
+  if(reco){ try{ reco.stop(); }catch(e){} return; }
+  try{
+    if(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia){
+      const f=await navigator.mediaDevices.getUserMedia({audio:true}); f.getTracks().forEach(t=>t.stop());
+    }
+  }catch(e){ toast('Micro bloqué : autorise-le pour ce site'); return; }
+  reco=new R(); reco.lang='fr-FR'; reco.interimResults=true; reco.continuous=false;
+  const base=$('msg').value.trim();
+  reco.onstart=()=>{ $('btn-mic').classList.add('rec'); toast("Je t'écoute…"); };
+  reco.onresult=e=>{ let s=''; for(let k=0;k<e.results.length;k++) s+=e.results[k][0].transcript;
+    $('msg').value=(base?base+' ':'')+s; $('msg').dispatchEvent(new Event('input')); };
+  reco.onerror=ev=>{ const m={'not-allowed':'Micro refusé','no-speech':"Je n'ai rien entendu",
+    'audio-capture':'Aucun micro','network':'Connexion requise'}; toast(m[ev.error]||('Dictée : '+ev.error)); };
+  reco.onend=()=>{ reco=null; $('btn-mic').classList.remove('rec'); };
+  try{ reco.start(); }catch(e){ reco=null; toast('Dictée impossible'); }
+}
+
+/* ============================================================
+   9. LE POINT
+   ============================================================ */
+function ligneItem(it,rang){
+  const r=raisons(it).map(([c,t])=>`<span class="chip ${c}">${t}</span>`).join('');
+  const pour=nomUser(it.assigne_id);
+  return `<button class="item ${it.statut==='Fait'?'done':''}" onclick="openItem(${it.id})">
+    <span class="rail" style="background:${couleur(it)}"></span>
+    ${rang?`<span class="rank">${rang}</span>`:''}
+    <span class="body">
+      <span class="t">${esc(it.titre)}</span>
+      <span class="meta">
+        <span class="chip">${CAT[it.categorie]?CAT[it.categorie].nom:'—'}</span>
+        ${r}
+        ${pour?`<span class="chip moi">→ ${esc(pour)}</span>`:''}
+        ${it.prive?`<span class="chip">moi seule</span>`:''}
+      </span>
+    </span></button>`;
+}
+function lot(){
+  const o=ouverts();
+  if(S.onglet==='moi')   return o.filter(i=>S.moi && i.assigne_id==S.moi.id && !i.prive);
+  if(S.onglet==='autre') return o.filter(i=>i.assigne_id==autre().id);
+  if(S.onglet==='perso') return o.filter(i=>i.prive);
+  return o.filter(i=>!i.prive);
+}
+function renderPoint(){
+  const l=trie(lot());
+  $('point-tabs').innerHTML=
+    `<button class="tab ${S.onglet==='nous'?'on':''}"  onclick="setOnglet('nous')">Nous</button>
+     <button class="tab ${S.onglet==='moi'?'on':''}"   onclick="setOnglet('moi')">Pour moi</button>
+     <button class="tab ${S.onglet==='autre'?'on':''}" onclick="setOnglet('autre')">Pour ${esc(autre().nom)}</button>
+     <button class="tab ${S.onglet==='perso'?'on':''}" onclick="setOnglet('perso')">Perso</button>`;
+  $('k-ouv').textContent=l.length;
+  $('k-ret').textContent=l.filter(i=>{const j=jours(i.echeance);return j!==null&&j<0;}).length;
+  $('k-fait').textContent=visibles().filter(i=>i.statut==='Fait'&&i.date_cloture&&
+    (Date.now()-new Date(i.date_cloture))<30*86400000).length;
+
+  let html=`<div class="section-h"><h2>Dans l'ordre</h2><span>${l.length} chose${l.length>1?'s':''} à faire</span></div>`
+    + (l.length? l.map((it,k)=>ligneItem(it,k+1)).join('')
+      : `<div class="empty"><b>Rien à faire</b>${
+          S.onglet==='perso' ? "Ce que tu notes ici n'est visible que de toi"
+                             : "Note quelque chose depuis Talk to me"}</div>`);
+  html += `<button class="btn sec" onclick="openItem(null,${S.onglet==='perso'?'true':'false'})">Ajouter</button>`;
+  $('point-corps').innerHTML=html;
+}
+function setOnglet(v){ S.onglet=v; renderPoint(); window.scrollTo(0,0); }
+
+/* ============================================================
+   10. PRIORITÉS
+   ============================================================ */
+function renderListe(){
+  const q=norm($('q').value||'');
+  let l = S.filtreStatut==='fait' ? visibles().filter(i=>i.statut==='Fait') : ouverts();
+  if(S.filtreCat!=='tout') l=l.filter(i=>i.categorie===S.filtreCat);
+  if(q) l=l.filter(i=>norm((i.titre||'')+' '+(i.description||'')).includes(q));
+  l=trie(l);
+  $('liste-filtres').innerHTML=
+    `<button class="tab ${S.filtreStatut==='ouvert'?'on':''}" onclick="setF('statut','ouvert')">À faire</button>
+     <button class="tab ${S.filtreStatut==='fait'?'on':''}" onclick="setF('statut','fait')">Faits</button>
+     <button class="tab ${S.filtreCat==='tout'?'on':''}" onclick="setF('cat','tout')">Tout</button>`
+    + CATS.map(c=>`<button class="tab ${S.filtreCat===c.id?'on':''}" onclick="setF('cat','${c.id}')">${c.nom.split(' /')[0]}</button>`).join('');
+  $('liste-corps').innerHTML=(l.length
+    ? l.map((it,i)=>ligneItem(it,S.filtreStatut==='fait'?0:i+1)).join('')
+    : `<div class="empty"><b>Aucun résultat</b>Change de filtre</div>`)
+    + (S.filtreStatut==='fait'? boutonPurge() : '');
+  $('subtitle').innerHTML=l.length+(l.length>1?' sujets':' sujet');
+}
+function setF(k,v){ if(k==='cat') S.filtreCat=v; else S.filtreStatut=v; renderListe(); }
+
+const SIX_MOIS=182*86400000;
+const dateFin = i => new Date(i.date_cloture||i.updated_at||i.created_at||0);
+function vieux(){ const lim=Date.now()-SIX_MOIS;
+  return visibles().filter(i=>i.statut==='Fait' && dateFin(i)<lim); }
+function boutonPurge(){
+  const n=vieux().length;
+  return `<button class="btn del" onclick="purger()" ${n?'':'style="opacity:.45"'}>
+    Vider les faits de plus de 6 mois${n?' ('+n+')':''}</button>`;
+}
+async function purger(){
+  const l=vieux(); if(!l.length) return toast('Rien de plus de 6 mois');
+  if(!confirm('Supprimer définitivement '+l.length+' sujet'+(l.length>1?'s':'')+' ?')) return;
+  for(const it of l){ try{ await dbDelete('home_sujets',it.id); S.items=S.items.filter(x=>x.id!=it.id); }catch(e){} }
+  render(); toast('Nettoyé');
+}
+
+/* ============================================================
+   11. FICHE
+   ============================================================ */
+function openSheet(id){ $(id).classList.add('on'); }
+function closeSheet(id){ $(id).classList.remove('on'); }
+document.querySelectorAll('.sheet').forEach(s=>s.addEventListener('click',e=>{ if(e.target===s) s.classList.remove('on'); }));
+function seg(cont,items,val){
+  $(cont).innerHTML=items.map(i=>`<button data-v="${i.v}" class="${i.v==val?'on':''}">${i.l}</button>`).join('');
+  $(cont).querySelectorAll('button').forEach(b=>b.onclick=()=>{
+    $(cont).querySelectorAll('button').forEach(x=>x.classList.remove('on')); b.classList.add('on'); });
+}
+const segVal = c => { const b=$(c).querySelector('button.on'); return b?b.dataset.v:null; };
+
+function openItem(id,privDefaut){
+  const it = id? S.items.find(x=>x.id==id) : null;
+  S.editItem=it?it.id:null;
+  S.actions = it && Array.isArray(it.actions)? JSON.parse(JSON.stringify(it.actions)) : [];
+  $('item-h').textContent = it? 'Sujet' : 'Nouveau sujet';
+  $('f-titre').value = it? it.titre||'' : '';
+  $('f-desc').value  = it? it.description||'' : '';
+  $('f-cat').innerHTML = CATS.map(c=>`<option value="${c.id}">${c.nom}</option>`).join('');
+  $('f-cat').value = it? it.categorie : 'maison';
+  S.echInit={hz: it? horizonDe(it.echeance):'', iso: it? (it.echeance||null):null};
+  $('f-echeance').innerHTML = optionsHorizon(S.echInit.hz);
+  seg('f-prio', PRIOS.map(p=>({v:p.v,l:p.l})), it? it.priorite:2);
+  seg('f-statut', STATUTS.map(s=>({v:s,l:s})), it? it.statut:'À faire');
+  $('f-assigne').innerHTML='<option value="">Personne en particulier</option>'
+    + S.users.map(u=>`<option value="${u.id}" ${it&&it.assigne_id==u.id?'selected':''}>${esc(u.nom)}</option>`).join('');
+  $('f-prive').value = it? (it.prive?'1':'0') : (privDefaut?'1':'0');
+  $('b-suppr').style.display = it?'block':'none';
+  $('b-clore').style.display = (it && it.statut!=='Fait')?'block':'none';
+  renderActions(); $('f-newact').value='';
+  openSheet('sh-item');
+}
+function renderActions(){
+  $('f-actions').innerHTML = S.actions.length? S.actions.map((a,i)=>
+    `<div class="act ${a.fait?'done':''}">
+      <input type="checkbox" ${a.fait?'checked':''} onchange="S.actions[${i}].fait=this.checked;renderActions()">
+      <span>${esc(a.texte)}</span><button onclick="S.actions.splice(${i},1);renderActions()">✕</button>
+     </div>`).join('') : '<div class="muted">Découpe en étapes si besoin.</div>';
+}
+function addAction(){ const v=$('f-newact').value.trim(); if(!v) return;
+  S.actions.push({texte:v,fait:false}); $('f-newact').value=''; renderActions(); }
+async function saveItem(){
+  const titre=$('f-titre').value.trim(); if(!titre) return toast('Il manque le sujet');
+  const hz=$('f-echeance').value;
+  const row={ titre, categorie:$('f-cat').value,
+    description:$('f-desc').value.trim()||null,
+    priorite:+segVal('f-prio'), statut:segVal('f-statut'),
+    echeance:(hz===S.echInit.hz? S.echInit.iso : dateHorizon(hz)),
+    assigne_id:$('f-assigne').value? +$('f-assigne').value : null,
+    prive:$('f-prive').value==='1',
+    actions:S.actions, updated_at:new Date().toISOString() };
+  if(!S.editItem) row.auteur_id = S.moi? S.moi.id : null;
+  if(row.statut==='Fait') row.date_cloture=new Date().toISOString();
+  try{
+    if(S.editItem){ const u=await dbUpdate('home_sujets',S.editItem,row); S.items=S.items.map(i=>i.id==S.editItem?u:i); }
+    else{ const n=await dbInsert('home_sujets',row); S.items.push(n); }
+    closeSheet('sh-item'); render(); toast('Enregistré');
+  }catch(e){ toast('Erreur : '+e.message); }
+}
+async function cloreItem(){
+  if(!S.editItem) return;
+  const u=await dbUpdate('home_sujets',S.editItem,{statut:'Fait',date_cloture:new Date().toISOString()});
+  S.items=S.items.map(i=>i.id==S.editItem?u:i);
+  closeSheet('sh-item'); render(); toast('C\'est fait');
+}
+async function delItem(){
+  if(!S.editItem||!confirm('Supprimer ?')) return;
+  await dbDelete('home_sujets',S.editItem);
+  S.items=S.items.filter(i=>i.id!=S.editItem);
+  closeSheet('sh-item'); render(); toast('Supprimé');
+}
+
+/* ============================================================
+   12. EXPORT / TOAST / NAVIGATION
+   ============================================================ */
+function exportCSV(){
+  const l=trie(S.filtreStatut==='fait'?visibles().filter(i=>i.statut==='Fait'):ouverts());
+  const csv=[['Categorie','Sujet','Priorite','Statut','Pour','Echeance','Detail'].join(';')]
+    .concat(l.map(i=>[CAT[i.categorie]?CAT[i.categorie].nom:'', i.titre,
+      (PRIOS.find(p=>p.v==i.priorite)||{}).l||'', i.statut, nomUser(i.assigne_id)||'',
+      i.echeance||'', (i.description||'').replace(/[\r\n;]/g,' ')]
+      .map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(';'))).join('\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'}));
+  a.download='fortin-home-'+jourISO(new Date())+'.csv'; a.click();
+}
+let tT;
+function toast(m){ const t=$('toast'); t.textContent=m; t.classList.add('on');
+  clearTimeout(tT); tT=setTimeout(()=>t.classList.remove('on'),2200); }
+
+function render(){
+  if(S.view==='capture'){ $('title').textContent='Talk to me';
+    const o=ouverts().length; $('subtitle').innerHTML=o+(o>1?' choses à faire':' chose à faire');
+    bienvenue(); renderChat(); }
+  if(S.view==='point'){ $('title').textContent='Le Point';
+    $('subtitle').innerHTML=(S.moi?esc(S.moi.nom):'')+'<br>'+trie(lot()).length+' en cours';
+    renderPoint(); }
+  if(S.view==='liste'){ $('title').textContent='Priorités'; renderListe(); }
+}
+function go(v){
+  S.view=v;
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));
+  $('s-'+v).classList.add('on');
+  document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
+  $('fab').classList.toggle('hide',v==='capture');
+  render(); window.scrollTo(0,0);
+}
+
+/* ============================================================
+   13. ACCÈS + DÉMARRAGE
+   ============================================================ */
+function sess(k,v){ try{ if(v===undefined) return sessionStorage.getItem(k); sessionStorage.setItem(k,v); }catch(e){ return null; } }
+$('pin').addEventListener('input',async e=>{
+  const v=e.target.value; if(v.length<4) return;
+  let u=null;
+  if(SB){ try{ const {data}=await SB.from('home_utilisateurs').select('*').eq('pin',v).eq('actif',true);
+    if(data&&data.length) u=data[0]; }catch(err){} }
+  else u=mem.home_utilisateurs.find(x=>x.pin===v)||null;
+  if(!u && v===PIN_SECOURS) u={id:1,nom:'Charlotte'};
+  if(u){ S.moi={id:u.id,nom:u.nom}; sess('fortin_moi',JSON.stringify(S.moi)); demarrer(); }
+  else { $('pinErr').textContent='Code incorrect'; e.target.value=''; }
+});
+function logout(){ try{ sessionStorage.removeItem('fortin_moi'); }catch(e){} location.reload(); }
+
+async function charger(){
+  const [s,u]=await Promise.all([dbList('home_sujets'),dbList('home_utilisateurs')]);
+  S.items=s; S.users=(u||[]).filter(x=>x.actif!==false).map(x=>({id:x.id,nom:x.nom}));
+  if(S.moi && !S.users.some(x=>x.id==S.moi.id)) S.users.unshift(S.moi);
+}
+async function demarrer(){
+  $('login').style.display='none';
+  try{ if(!SB) lsGet(); await charger(); }catch(e){ toast('Chargement impossible : '+e.message); }
+  go('point');
+}
+async function rafraichir(){
+  if(!S.moi || !SB || document.querySelector('.sheet.on')) return;
+  try{ await charger(); render(); }catch(e){}
+}
+setInterval(rafraichir,90000);
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden) rafraichir(); });
+$('mode').textContent = CONFIGURE? '' : "Mode local : renseigne Supabase en haut du fichier pour synchroniser vos deux téléphones.";
+(function(){ const s=sess('fortin_moi'); if(s){ try{ S.moi=JSON.parse(s); demarrer(); }catch(e){} } })();
+</script>
+</body>
+</html>
