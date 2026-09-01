@@ -350,7 +350,7 @@ async function dbDelete(t,id){
    4. ÉTAT
    ============================================================ */
 let S = {moi:null,users:[],items:[],foyer:'',view:'point',onglet:'nous',
-         filtreCat:'tout',filtreStatut:'ouvert',editItem:null,actions:[],chat:[],echInit:{hz:'',iso:null}};
+         filtreCat:'tout',filtreStatut:'ouvert',voirFaits:false,editItem:null,actions:[],chat:[],echInit:{hz:'',iso:null}};
 
 /* ============================================================
    5. PRIORITÉ
@@ -690,10 +690,29 @@ function renderPoint(){
   let html=`<div class="section-h"><h2>Dans l'ordre</h2><span>${l.length} chose${l.length>1?'s':''} à faire</span></div>`
     + (l.length? l.map((it,k)=>ligneItem(it,k+1)).join('')
       : `<div class="empty"><b>Rien à faire</b>Note quelque chose depuis Talk to me</div>`);
+  html += blocFaits();
   html += `<button class="btn sec" onclick="openItem(null,false,${S.onglet==='moi'&&S.moi?S.moi.id:'null'})">Ajouter</button>`;
   $('point-corps').innerHTML=html;
 }
-function setOnglet(v){ S.onglet=v; renderPoint(); window.scrollTo(0,0); }
+function setOnglet(v){ S.onglet=v; S.voirFaits=false; renderPoint(); window.scrollTo(0,0); }
+function basculeFaits(){ S.voirFaits=!S.voirFaits; renderPoint(); }
+/* Ce qui est fait, dans le même périmètre que l'onglet affiché. */
+function faitsDuLot(){
+  const f=visibles().filter(i=>i.statut==='Fait');
+  const l = S.onglet==='moi'   ? f.filter(i=>S.moi && (i.assigne_id==S.moi.id || (i.prive && i.auteur_id==S.moi.id)))
+          : S.onglet==='autre' ? f.filter(i=>i.assigne_id==autre().id)
+                               : f.filter(i=>!i.prive && !i.assigne_id);
+  return l.sort((a,b)=>new Date(b.date_cloture||0)-new Date(a.date_cloture||0));
+}
+function blocFaits(){
+  const f=faitsDuLot();
+  if(!f.length) return '';
+  let s=`<div class="section-h"><h2>Faits</h2><span>${f.length}</span>
+    <button class="tab" style="margin-left:auto" onclick="basculeFaits()">${S.voirFaits?'Masquer':'Voir'}</button></div>`;
+  if(S.voirFaits) s += f.slice(0,20).map(it=>ligneItem(it)).join('')
+    + (f.length>20? `<div class="muted">Les ${f.length-20} plus anciens sont dans Priorités, filtre Faits.</div>`:'');
+  return s;
+}
 
 /* ============================================================
    10. PRIORITÉS
