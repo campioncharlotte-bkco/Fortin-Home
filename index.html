@@ -878,7 +878,9 @@ function render(){
     const o=ouverts().length; $('subtitle').innerHTML=o+(o>1?' choses à faire':' chose à faire');
     bienvenue(); renderChat(); }
   if(S.view==='point'){ $('title').textContent='Le Point';
-    $('subtitle').innerHTML=(S.moi?esc(S.moi.nom):'')+'<br>'+trie(lot()).length+' en cours';
+    /* Vue d'ensemble : tout ce qui reste à faire, quel que soit l'onglet. */
+    const tout=ouverts().length;
+    $('subtitle').innerHTML=(S.moi?esc(S.moi.nom):'')+'<br>'+tout+(tout>1?' choses en tout':' chose en tout');
     renderPoint(); }
   if(S.view==='liste'){ $('title').textContent='Priorités'; renderListe(); }
 }
