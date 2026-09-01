@@ -501,7 +501,16 @@ function analyseLocale(texte){
       const n=norm(u.nom).split(' ')[0];
       if(n.length>=3 && new RegExp('(^|[^a-z])'+n+'([^a-z]|$)').test(t)) assigne=u.id;
     });
-    let titre=bout.trim().replace(/^./,c=>c.toUpperCase()); let desc=null;
+    /* Le titre s'adresse à celui qui doit agir : on retire « X doit »
+       et on bascule les possessifs à la première personne. */
+    let titre=bout.trim();
+    if(assigne){
+      const pre=norm(nomUser(assigne)||'').split(' ')[0];
+      if(pre) titre=titre.replace(new RegExp('^\\s*'+pre+"\\s+(doit|va|peut|devrait)\\s+",'i'),'');
+      titre=titre.replace(/\bses\b/gi,'mes').replace(/\bson\b/gi,'mon')
+                 .replace(/\bsa\b/gi,'ma').replace(/\bleurs?\b/gi,'mes');
+    }
+    titre=titre.replace(/^./,c=>c.toUpperCase()); let desc=null;
     if(titre.length>90){ desc=titre; titre=titre.slice(0,87).trim()+'…'; }
     return {titre, categorie:detectCat(t), priorite:detectPrio(t), statut:'À faire',
             echeance:detectEcheance(t), assigne_id:assigne, prive, description:desc, actions:[]};
