@@ -35,7 +35,7 @@ RÈGLES
 7. prive : true seulement si elle dit que c'est personnel ("perso", "pour moi seule"). Par défaut false : dans un couple, l'organisation est partagée.
 8. description : uniquement le contexte réellement dicté, sinon null.
 9. actions : découpe en étapes seulement si plusieurs sont énoncées.
-10. Repères de classement : acheter, prendre, commander, aller chercher quelque chose de consommable (nourriture, produits, croquettes) = "courses". Un rendez-vous ou un horaire à honorer = "rdv". Ce qui concerne l'enfant, la crèche, l'école, la garde, la famille élargie = "famille". L'animal, le jardin, la voiture = "exterieur". Réserve "maison" à la maison elle-même : travaux, réparations, entretien, ménage, équipement.
+10. Repères de classement : acheter, prendre, commander, aller chercher quelque chose de consommable (nourriture, produits, croquettes) = "courses". Un rendez-vous ou un horaire à honorer = "rdv". Ce qui concerne l'enfant, la crèche, l'école, la garde, la famille élargie = "famille". Tout ce qui touche l'animal du foyer — nourriture, vétérinaire, toilettage, promenade, garde — = "animaux", même quand il s'agit d'un achat. Le jardin et la voiture = "exterieur". Réserve "maison" à la maison elle-même : travaux, réparations, entretien, ménage, équipement.
 
 Réponds UNIQUEMENT par un JSON valide, sans balise de code :
 {"sujets":[{"titre":"","categorie":"maison","priorite":2,"statut":"À faire","echeance":null,"assigne_id":null,"prive":false,"description":null,"actions":[]}]}`;
