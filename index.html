@@ -750,7 +750,7 @@ function renderListe(){
     ? l.map((it,i)=>ligneItem(it,S.filtreStatut==='fait'?0:i+1)).join('')
     : `<div class="empty"><b>Aucun résultat</b>Change de filtre</div>`)
     + (S.filtreStatut==='fait'? boutonPurge() : '');
-  $('subtitle').innerHTML=l.length+(l.length>1?' sujets':' sujet');
+  $('subtitle').innerHTML='';
 }
 function setF(k,v){ if(k==='cat') S.filtreCat=v; else S.filtreStatut=v; renderListe(); }
 
@@ -875,12 +875,9 @@ function toast(m){ const t=$('toast'); t.textContent=m; t.classList.add('on');
 
 function render(){
   if(S.view==='capture'){ $('title').textContent='Talk to me';
-    const o=ouverts().length; $('subtitle').innerHTML=o+(o>1?' choses à faire':' chose à faire');
-    bienvenue(); renderChat(); }
+    $('subtitle').innerHTML=''; bienvenue(); renderChat(); }
   if(S.view==='point'){ $('title').textContent='Le Point';
-    /* Vue d'ensemble : tout ce qui reste à faire, quel que soit l'onglet. */
-    const tout=ouverts().length;
-    $('subtitle').innerHTML=(S.moi?esc(S.moi.nom):'')+'<br>'+tout+(tout>1?' choses en tout':' chose en tout');
+    $('subtitle').innerHTML=(S.moi?esc(S.moi.nom):'');
     renderPoint(); }
   if(S.view==='liste'){ $('title').textContent='Priorités'; renderListe(); }
 }
