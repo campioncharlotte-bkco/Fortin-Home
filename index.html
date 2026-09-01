@@ -246,11 +246,7 @@ textarea{min-height:76px;resize:vertical;font-size:15px}
     <div><label>Catégorie</label><select id="f-cat"></select></div>
     <div><label>À faire</label><select id="f-echeance"></select></div>
   </div>
-  <div class="row">
-    <div><label>Ou date précise</label><input id="f-date" type="date"></div>
-    <div><label>Heure</label><input id="f-heure" type="time"></div>
-  </div>
-  <button class="btn sec" id="b-ics" onclick="exportICS()">Ajouter à mon calendrier</button>
+
   <label>Priorité</label>
   <div class="seg" id="f-prio"></div>
   <label>Statut</label>
@@ -380,7 +376,6 @@ function score(it){
 }
 function raisons(it){
   const out=[]; const j=jours(it.echeance);
-  if(it.heure) out.push(['now',(j===0?"Aujourd'hui ":'')+it.heure]);
   if(j!==null && j<0) out.push(['late','Retard '+(-j)+' j']);
   else if(j===0) out.push(['late',"Aujourd'hui"]);
   else if(j!==null && j<=3) out.push(['blk','Dans '+j+' j']);
@@ -464,13 +459,6 @@ function detectPrio(t){
   if(/un jour|plus tard|quand on aura le temps|pas presse|penser a/.test(t)) return 3;
   return 2;
 }
-function detectHeure(t){
-  let m=t.match(/(\d{1,2})\s*h\s*(\d{2})?/);
-  if(m) return ics2(+m[1])+':'+(m[2]?m[2]:'00');
-  m=t.match(/(\d{1,2}):(\d{2})/);
-  if(m) return ics2(+m[1])+':'+m[2];
-  return null;
-}
 function detectEcheance(t){
   const now=new Date(); const add=n=>{ const d=new Date(now); d.setDate(d.getDate()+n); return jourISO(d); };
   if(/aujourd hui|ce soir|dans la journee/.test(t)) return add(0);
@@ -510,8 +498,7 @@ function analyseLocale(texte){
     let titre=bout.trim().replace(/^./,c=>c.toUpperCase()); let desc=null;
     if(titre.length>90){ desc=titre; titre=titre.slice(0,87).trim()+'…'; }
     return {titre, categorie:detectCat(t), priorite:detectPrio(t), statut:'À faire',
-            echeance:detectEcheance(t), heure:detectHeure(t),
-            assigne_id:assigne, prive, description:desc, actions:[]};
+            echeance:detectEcheance(t), assigne_id:assigne, prive, description:desc, actions:[]};
   });
 }
 function nettoie(s){
@@ -524,16 +511,12 @@ function nettoie(s){
     echeance:dt(s.echeance),
     assigne_id:S.users.some(u=>u.id==s.assigne_id)?s.assigne_id:null,
     prive:s.prive===true,
-    heure:(typeof s.heure==='string' && /^\d{2}:\d{2}$/.test(s.heure))? s.heure : null,
-    maj_id:S.items.some(i=>i.id==s.maj_id)? s.maj_id : null,
     description:s.description||null,
     actions:Array.isArray(s.actions)?s.actions.map(a=>typeof a==='string'?{texte:a,fait:false}:a):[]
   };
 }
 async function analyser(texte){
   const contexte={ date:jourISO(new Date()), foyer:S.foyer||'',
-    taches:ouverts().slice(0,40).map(i=>({id:i.id,titre:i.titre,categorie:i.categorie,
-      assigne_id:i.assigne_id,echeance:i.echeance,heure:i.heure})),
     utilisateurs:S.users.map(u=>({id:u.id,nom:u.nom})),
     moi:S.moi?{id:S.moi.id,nom:S.moi.nom}:null,
     categories:CATS.map(c=>({id:c.id,nom:c.nom})) };
@@ -570,9 +553,7 @@ function renderChat(){
 }
 function carteHTML(m,i){
   const s=m.s;
-  const maj=s.maj_id? S.items.find(x=>x.id==s.maj_id) : null;
   return `<div class="carte">
-    ${maj?`<div class="muted" style="margin-bottom:6px">Mise à jour de « ${esc(maj.titre)} »</div>`:''}
     <input class="ct" value="${esc(s.titre)}" onchange="majCarte(${i},'titre',this.value)">
     <div class="grid">
       <select onchange="majCarte(${i},'categorie',this.value)">
@@ -590,7 +571,6 @@ function carteHTML(m,i){
         <option value="0" ${s.prive?'':'selected'}>Nous deux</option>
         <option value="1" ${s.prive?'selected':''}>Moi seule</option>
       </select>
-      ${s.heure?`<input type="time" value="${s.heure}" onchange="majCarte(${i},'heure',this.value)">`:''}
     </div>
     <div class="acts2">
       <button class="no2" onclick="jeter(${i})">Annuler</button>
@@ -604,33 +584,19 @@ function majCarte(i,champ,val){
   if(champ==='assigne_id') val=val?+val:null;
   if(champ==='prive') val=(val==='1');
   if(champ==='echeance') val=dateHorizon(val);
-  if(champ==='heure') val=val||null;
   m.s[champ]=val; renderChat();
 }
 function jeter(i){ S.chat.splice(i,1); renderChat(); }
 async function ranger(i){
   const m=S.chat[i]; if(!m) return;
-  const s={...m.s}; s.updated_at=new Date().toISOString();
-  const majId=s.maj_id; delete s.maj_id;
+  const s={...m.s}; s.auteur_id=S.moi?S.moi.id:null; s.updated_at=new Date().toISOString();
   try{
-    let n;
-    if(majId){                                   // on complète une tâche existante
-      const patch={updated_at:s.updated_at};
-      ['echeance','heure','priorite','statut','assigne_id','categorie','description'].forEach(k=>{
-        if(s[k]!==null && s[k]!==undefined) patch[k]=s[k]; });
-      n=await dbUpdate('home_sujets',majId,patch);
-      S.items=S.items.map(x=>x.id==majId?n:x);
-    }else{
-      s.auteur_id=S.moi?S.moi.id:null;
-      n=await dbInsert('home_sujets',s);
-      S.items.push(n);
-    }
+    const n=await dbInsert('home_sujets',s);
+    S.items.push(n);
     const rang=trie(ouverts()).findIndex(x=>x.id==n.id)+1;
     const pour=nomUser(n.assigne_id);
     S.chat[i]={role:'app',fait:true,
-      html:(majId?'Mis à jour dans <b>':'Rangé dans <b>')+CAT[n.categorie].nom+'</b>'
-           +(pour?` · pour <b>${esc(pour)}</b>`:'')+(n.prive?' · visible de toi seule':'')
-           +(n.heure?` · <b>${esc(n.heure)}</b>`:'')
+      html:`Rangé dans <b>${CAT[n.categorie].nom}</b>${pour?` · pour <b>${esc(pour)}</b>`:''}${n.prive?' · visible de toi seule':''}`
            +`<br>Position <b>${rang}</b> sur ${ouverts().length}.`};
     renderChat(); render();
   }catch(e){ toast('Erreur : '+e.message); }
@@ -796,9 +762,6 @@ function openItem(id,privDefaut,assigneDefaut){
   $('f-cat').value = it? it.categorie : 'maison';
   S.echInit={hz: it? horizonDe(it.echeance):'', iso: it? (it.echeance||null):null};
   $('f-echeance').innerHTML = optionsHorizon(S.echInit.hz);
-  $('f-date').value  = it? (it.echeance||'') : '';
-  $('f-heure').value = it? (it.heure||'') : '';
-  $('b-ics').style.display = (it && it.echeance)?'block':'none';
   seg('f-prio', PRIOS.map(p=>({v:p.v,l:p.l})), it? it.priorite:2);
   seg('f-statut', STATUTS.map(s=>({v:s,l:s})), it? it.statut:'À faire');
   $('f-assigne').innerHTML='<option value="">Personne en particulier</option>'
@@ -825,8 +788,7 @@ async function saveItem(){
   const row={ titre, categorie:$('f-cat').value,
     description:$('f-desc').value.trim()||null,
     priorite:+segVal('f-prio'), statut:segVal('f-statut'),
-    echeance:($('f-date').value || (hz===S.echInit.hz? S.echInit.iso : dateHorizon(hz))),
-    heure:$('f-heure').value||null,
+    echeance:(hz===S.echInit.hz? S.echInit.iso : dateHorizon(hz)),
     assigne_id:$('f-assigne').value? +$('f-assigne').value : null,
     prive:$('f-prive').value==='1',
     actions:S.actions, updated_at:new Date().toISOString() };
@@ -864,38 +826,6 @@ function exportCSV(){
   const a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'}));
   a.download='fortin-home-'+jourISO(new Date())+'.csv'; a.click();
-}
-/* Export d'un rendez-vous vers Outlook, Google Agenda ou le calendrier du téléphone.
-   Format .ics : universel, aucune connexion à configurer. */
-function ics2(n){ return String(n).padStart(2,'0'); }
-function exportICS(){
-  const it=S.items.find(x=>x.id==S.editItem); if(!it||!it.echeance) return toast('Il manque la date');
-  const [A,M,J]=it.echeance.split('-').map(Number);
-  const pour=nomUser(it.assigne_id);
-  let deb,fin;
-  if(it.heure){
-    const [hh,mm]=it.heure.split(':').map(Number);
-    const f=new Date(A,M-1,J,hh,mm), g=new Date(f.getTime()+3600000);
-    const fmt=d=>d.getFullYear()+ics2(d.getMonth()+1)+ics2(d.getDate())+'T'+ics2(d.getHours())+ics2(d.getMinutes())+'00';
-    deb='DTSTART:'+fmt(f); fin='DTEND:'+fmt(g);
-  }else{
-    const l=new Date(A,M-1,J+1);
-    deb='DTSTART;VALUE=DATE:'+A+ics2(M)+ics2(J);
-    fin='DTEND;VALUE=DATE:'+l.getFullYear()+ics2(l.getMonth()+1)+ics2(l.getDate());
-  }
-  const now=new Date();
-  const stamp=now.getUTCFullYear()+ics2(now.getUTCMonth()+1)+ics2(now.getUTCDate())+'T'
-             +ics2(now.getUTCHours())+ics2(now.getUTCMinutes())+'00Z';
-  const echap=s=>(s||'').replace(/[\\;,]/g,m=>'\\'+m).replace(/\n/g,'\\n');
-  const ics=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Fortin Home//FR','CALSCALE:GREGORIAN',
-    'BEGIN:VEVENT','UID:fortinhome-'+it.id+'@fortin','DTSTAMP:'+stamp,deb,fin,
-    'SUMMARY:'+echap(it.titre),
-    'DESCRIPTION:'+echap((it.description||'')+(pour?(it.description?' — ':'')+'Pour '+pour:'')),
-    'END:VEVENT','END:VCALENDAR'].join('\r\n');
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(new Blob([ics],{type:'text/calendar;charset=utf-8'}));
-  a.download=(it.titre||'rendez-vous').replace(/[^\w\-]+/g,'-').slice(0,40)+'.ics'; a.click();
-  toast('Choisis ton calendrier');
 }
 let tT;
 function toast(m){ const t=$('toast'); t.textContent=m; t.classList.add('on');
