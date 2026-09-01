@@ -195,6 +195,7 @@ textarea{min-height:76px;resize:vertical;font-size:15px}
 <div class="topbar">
   <h1 id="title">Le Point</h1>
   <div class="sub" id="subtitle"></div>
+  <button class="out" onclick="openFoyer()" aria-label="Notre monde">☰</button>
   <button class="out" onclick="logout()" aria-label="Quitter">⏻</button>
 </div>
 
@@ -267,6 +268,21 @@ textarea{min-height:76px;resize:vertical;font-size:15px}
   <button class="btn del" id="b-suppr" onclick="delItem()">Supprimer</button>
 </div></div>
 
+<div class="sheet" id="sh-foyer"><div class="card">
+  <div class="hd"><h2>Notre monde</h2><button onclick="closeSheet('sh-foyer')">Fermer</button></div>
+  <div class="muted">Raconte qui vous êtes et de quoi est faite votre vie : la maison, vos métiers,
+  votre fils, vos frères et sœurs, neveux et nièces, le chien, vos lieux. Tout ce que tu écris ici
+  sert à comprendre de qui et de quoi tu parles quand tu dictes.</div>
+  <textarea id="f-foyer" style="min-height:280px" placeholder="Exemple :
+Notre fils s'appelle Ralph, il a 2 ans.
+Notre chien s'appelle X.
+La maison est à Merlimont ; on a un projet de construction.
+Charlotte dirige BKCO, Louis a son entreprise LF Agri.
+Mes frères et sœurs : ...
+Les neveux et nièces : ..."></textarea>
+  <button class="btn" onclick="saveFoyer()">Enregistrer</button>
+</div></div>
+
 <div class="toast" id="toast"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -305,7 +321,7 @@ const HORIZONS=[['','Sans date'],['jour',"Aujourd'hui"],['semaine','Cette semain
    ============================================================ */
 const CONFIGURE = !SUPABASE_URL.includes('XXXX');
 const SB = CONFIGURE ? supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
-let mem = {home_sujets:[], home_utilisateurs:[{id:1,nom:'Charlotte',pin:'1111',actif:true},
+let mem = {home_sujets:[], home_contexte:[{id:1,texte:''}], home_utilisateurs:[{id:1,nom:'Charlotte',pin:'1111',actif:true},
                                               {id:2,nom:'Louis',pin:'2222',actif:true}]};
 function lsGet(){ try{ const r=localStorage.getItem('fortin_home'); if(r) mem=JSON.parse(r); }catch(e){} }
 function lsSet(){ try{ localStorage.setItem('fortin_home',JSON.stringify(mem)); }catch(e){} }
@@ -331,7 +347,7 @@ async function dbDelete(t,id){
 /* ============================================================
    4. ÉTAT
    ============================================================ */
-let S = {moi:null,users:[],items:[],view:'point',onglet:'nous',
+let S = {moi:null,users:[],items:[],foyer:'',view:'point',onglet:'nous',
          filtreCat:'tout',filtreStatut:'ouvert',editItem:null,actions:[],chat:[],echInit:{hz:'',iso:null}};
 
 /* ============================================================
@@ -417,9 +433,12 @@ const MOTS = {
   argent:['budget','virement','credit','pret','banque','placement','epargne','remboursement','devis prix','compta'],
   maison:['maison','travaux','plombier','electricien','peinture','chantier','cuisine','salle de bain','chaudiere','fuite','menage','reparer','monter','installer','architecte','permis'],
   courses:['courses','acheter','commander','magasin','drive','pharmacie','pressing','stock','frigo','lessive'],
-  famille:['anniversaire','cadeau','inviter','diner','famille','amis','parents','appeler','ecole','enfants','baby'],
+  famille:['anniversaire','cadeau','inviter','diner','famille','amis','parents','ecole','enfants',
+    'baby','bbsitting','baby sitting','babysitting','garde','nounou','nourrice','creche','filleul',
+    'neveu','niece','frere','soeur','beau pere','belle mere','cousin','bapteme','mariage'],
   sorties:['week end','weekend','vacances','voyage','reserver','hotel','billet','restaurant','sortie','cinema','concert'],
-  exterieur:['jardin','tondre','haie','terrasse','piscine','voiture','pneus','revision','vidange','lavage','garage voiture','plantes']
+  exterieur:['jardin','tondre','haie','terrasse','piscine','voiture','pneus','revision','vidange',
+    'lavage','garage voiture','plantes','chien','chat','croquettes','promener','veto','toilettage']
 };
 function detectCat(t){
   let best=null, sc=0;
@@ -448,9 +467,15 @@ function detectEcheance(t){
       const d=new Date(now); const delta=((i-d.getDay()+7)%7)||7; d.setDate(d.getDate()+delta); return jourISO(d);
     }
   }
-  const m=t.match(/(\d{1,2})[\/\-](\d{1,2})(?:[\/\-](\d{2,4}))?/);
+  let m=t.match(/(\d{1,2})[\/\-](\d{1,2})(?:[\/\-](\d{2,4}))?/);
   if(m){ const an=m[3]?(m[3].length==2?'20'+m[3]:m[3]):now.getFullYear();
     return an+'-'+String(m[2]).padStart(2,'0')+'-'+String(m[1]).padStart(2,'0'); }
+  const MOIS={janvier:1,fevrier:2,mars:3,avril:4,mai:5,juin:6,juillet:7,aout:8,
+              septembre:9,octobre:10,novembre:11,decembre:12};
+  m=t.match(/(\d{1,2}) (janvier|fevrier|mars|avril|mai|juin|juillet|aout|septembre|octobre|novembre|decembre)/);
+  if(m){ const mo=MOIS[m[2]]; let an=now.getFullYear();
+    if(new Date(an,mo-1,+m[1])<now) an++;
+    return an+'-'+String(mo).padStart(2,'0')+'-'+String(m[1]).padStart(2,'0'); }
   return null;
 }
 function analyseLocale(texte){
@@ -485,7 +510,7 @@ function nettoie(s){
   };
 }
 async function analyser(texte){
-  const contexte={ date:jourISO(new Date()),
+  const contexte={ date:jourISO(new Date()), foyer:S.foyer||'',
     utilisateurs:S.users.map(u=>({id:u.id,nom:u.nom})),
     moi:S.moi?{id:S.moi.id,nom:S.moi.nom}:null,
     categories:CATS.map(c=>({id:c.id,nom:c.nom})) };
@@ -690,6 +715,16 @@ async function purger(){
 /* ============================================================
    11. FICHE
    ============================================================ */
+function openFoyer(){ $('f-foyer').value=S.foyer||''; openSheet('sh-foyer'); }
+async function saveFoyer(){
+  const t=$('f-foyer').value;
+  try{
+    if(SB){ const {error}=await SB.from('home_contexte')
+      .upsert({id:1,texte:t,updated_at:new Date().toISOString()}); if(error) throw error; }
+    else { mem.home_contexte=[{id:1,texte:t}]; lsSet(); }
+    S.foyer=t; closeSheet('sh-foyer'); toast('Enregistré');
+  }catch(e){ toast('Erreur : '+e.message); }
+}
 function openSheet(id){ $(id).classList.add('on'); }
 function closeSheet(id){ $(id).classList.remove('on'); }
 document.querySelectorAll('.sheet').forEach(s=>s.addEventListener('click',e=>{ if(e.target===s) s.classList.remove('on'); }));
@@ -817,6 +852,7 @@ function logout(){ try{ sessionStorage.removeItem('fortin_moi'); }catch(e){} loc
 async function charger(){
   const [s,u]=await Promise.all([dbList('home_sujets'),dbList('home_utilisateurs')]);
   S.items=s; S.users=(u||[]).filter(x=>x.actif!==false).map(x=>({id:x.id,nom:x.nom}));
+  try{ const c=await dbList('home_contexte'); S.foyer=(c[0]&&c[0].texte)||''; }catch(e){ S.foyer=S.foyer||''; }
   if(S.moi && !S.users.some(x=>x.id==S.moi.id)) S.users.unshift(S.moi);
 }
 async function demarrer(){
