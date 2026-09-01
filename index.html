@@ -625,9 +625,9 @@ function ligneItem(it,rang){
 }
 function lot(){
   const o=ouverts();
-  if(S.onglet==='moi')   return o.filter(i=>S.moi && i.assigne_id==S.moi.id && !i.prive);
+  /* « Pour moi » = ce qui m'est confié, mes tâches privées comprises. */
+  if(S.onglet==='moi')   return o.filter(i=>S.moi && (i.assigne_id==S.moi.id || (i.prive && i.auteur_id==S.moi.id)));
   if(S.onglet==='autre') return o.filter(i=>i.assigne_id==autre().id);
-  if(S.onglet==='perso') return o.filter(i=>i.prive);
   return o.filter(i=>!i.prive);
 }
 function renderPoint(){
@@ -635,8 +635,7 @@ function renderPoint(){
   $('point-tabs').innerHTML=
     `<button class="tab ${S.onglet==='nous'?'on':''}"  onclick="setOnglet('nous')">Nous</button>
      <button class="tab ${S.onglet==='moi'?'on':''}"   onclick="setOnglet('moi')">Pour moi</button>
-     <button class="tab ${S.onglet==='autre'?'on':''}" onclick="setOnglet('autre')">Pour ${esc(autre().nom)}</button>
-     <button class="tab ${S.onglet==='perso'?'on':''}" onclick="setOnglet('perso')">Perso</button>`;
+     <button class="tab ${S.onglet==='autre'?'on':''}" onclick="setOnglet('autre')">Pour ${esc(autre().nom)}</button>`;
   $('k-ouv').textContent=l.length;
   $('k-ret').textContent=l.filter(i=>{const j=jours(i.echeance);return j!==null&&j<0;}).length;
   $('k-fait').textContent=visibles().filter(i=>i.statut==='Fait'&&i.date_cloture&&
@@ -644,10 +643,8 @@ function renderPoint(){
 
   let html=`<div class="section-h"><h2>Dans l'ordre</h2><span>${l.length} chose${l.length>1?'s':''} à faire</span></div>`
     + (l.length? l.map((it,k)=>ligneItem(it,k+1)).join('')
-      : `<div class="empty"><b>Rien à faire</b>${
-          S.onglet==='perso' ? "Ce que tu notes ici n'est visible que de toi"
-                             : "Note quelque chose depuis Talk to me"}</div>`);
-  html += `<button class="btn sec" onclick="openItem(null,${S.onglet==='perso'?'true':'false'})">Ajouter</button>`;
+      : `<div class="empty"><b>Rien à faire</b>Note quelque chose depuis Talk to me</div>`);
+  html += `<button class="btn sec" onclick="openItem(null,false,${S.onglet==='moi'&&S.moi?S.moi.id:'null'})">Ajouter</button>`;
   $('point-corps').innerHTML=html;
 }
 function setOnglet(v){ S.onglet=v; renderPoint(); window.scrollTo(0,0); }
@@ -703,7 +700,7 @@ function seg(cont,items,val){
 }
 const segVal = c => { const b=$(c).querySelector('button.on'); return b?b.dataset.v:null; };
 
-function openItem(id,privDefaut){
+function openItem(id,privDefaut,assigneDefaut){
   const it = id? S.items.find(x=>x.id==id) : null;
   S.editItem=it?it.id:null;
   S.actions = it && Array.isArray(it.actions)? JSON.parse(JSON.stringify(it.actions)) : [];
@@ -717,7 +714,8 @@ function openItem(id,privDefaut){
   seg('f-prio', PRIOS.map(p=>({v:p.v,l:p.l})), it? it.priorite:2);
   seg('f-statut', STATUTS.map(s=>({v:s,l:s})), it? it.statut:'À faire');
   $('f-assigne').innerHTML='<option value="">Personne en particulier</option>'
-    + S.users.map(u=>`<option value="${u.id}" ${it&&it.assigne_id==u.id?'selected':''}>${esc(u.nom)}</option>`).join('');
+    + S.users.map(u=>{ const sel = it? (it.assigne_id==u.id) : (assigneDefaut==u.id);
+        return `<option value="${u.id}" ${sel?'selected':''}>${esc(u.nom)}</option>`; }).join('');
   $('f-prive').value = it? (it.prive?'1':'0') : (privDefaut?'1':'0');
   $('b-suppr').style.display = it?'block':'none';
   $('b-clore').style.display = (it && it.statut!=='Fait')?'block':'none';
