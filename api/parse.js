@@ -4,7 +4,7 @@
 // (ANTHROPIC_API_KEY), jamais dans le code.
 // ============================================================
 
-const MODELE = 'claude-haiku-4-5-20251001';   // rapide et peu coûteux ; 'claude-sonnet-5' si besoin de finesse
+const MODELE = 'claude-sonnet-5';   // le modèle léger classait trop de choses en 'maison'
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST uniquement' });
@@ -31,10 +31,11 @@ RÈGLES
 3. categorie : l'id exact de la liste. Appuie-toi sur NOTRE MONDE : un prénom qui n'est pas l'un des deux utilisateurs est un proche (enfant, filleul, frère, neveu) et relève de "famille" ; l'animal du foyer relève de "exterieur" ; le lieu de la maison relève de "maison". Ne mets "maison" par défaut que si rien d'autre ne colle.
 4. priorite : 1 si urgent ou bloquant, 3 si c'est un "un jour", 2 sinon.
 5. echeance : AAAA-MM-JJ calculée depuis la date du jour ("demain", "samedi", "avant la fin du mois"). null si rien n'est dit.
-6. assigne_id : si un prénom de la liste est cité comme devant s'en occuper, mets son id. Si la personne parle d'elle-même ("je dois", "je m'en occupe"), mets son propre id. Sinon null.
+6. assigne_id : uniquement si un prénom des DEUX utilisateurs est cité comme devant s'en occuper ("Louis doit…", "pour Louis", "voir avec Louis"), ou si la personne parle d'elle-même ("je dois", "je m'en occupe"). Dans le doute, laisse null : il vaut mieux une tâche non attribuée qu'attribuée à tort. Un prénom de proche (enfant, neveu, ami) n'est JAMAIS un assigne_id. Si la personne parle d'elle-même ("je dois", "je m'en occupe"), mets son propre id. Sinon null.
 7. prive : true seulement si elle dit que c'est personnel ("perso", "pour moi seule"). Par défaut false : dans un couple, l'organisation est partagée.
 8. description : uniquement le contexte réellement dicté, sinon null.
 9. actions : découpe en étapes seulement si plusieurs sont énoncées.
+10. Repères de classement : acheter, prendre, commander, aller chercher quelque chose de consommable (nourriture, produits, croquettes) = "courses". Un rendez-vous ou un horaire à honorer = "rdv". Ce qui concerne l'enfant, la crèche, l'école, la garde, la famille élargie = "famille". L'animal, le jardin, la voiture = "exterieur". Réserve "maison" à la maison elle-même : travaux, réparations, entretien, ménage, équipement.
 
 Réponds UNIQUEMENT par un JSON valide, sans balise de code :
 {"sujets":[{"titre":"","categorie":"maison","priorite":2,"statut":"À faire","echeance":null,"assigne_id":null,"prive":false,"description":null,"actions":[]}]}`;
