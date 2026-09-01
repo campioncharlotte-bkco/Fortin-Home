@@ -309,6 +309,7 @@ const CATS = [
   {id:'rdv',       nom:'Rendez-vous',        poids:18},
   {id:'famille',   nom:'Famille / amis',     poids:10},
   {id:'sorties',   nom:'Sorties / voyages',  poids:6},
+  {id:'animaux',   nom:'Animaux',            poids:14},
   {id:'exterieur', nom:'Jardin / voiture',   poids:8}
 ];
 const CAT = Object.fromEntries(CATS.map(c=>[c.id,c]));
@@ -439,8 +440,10 @@ const MOTS = {
     'baby','bbsitting','baby sitting','babysitting','garde','nounou','nourrice','creche','filleul',
     'neveu','niece','frere','soeur','beau pere','belle mere','cousin','bapteme','mariage'],
   sorties:['week end','weekend','vacances','voyage','reserver','hotel','billet','restaurant','sortie','cinema','concert'],
+  animaux:['chien','chienne','chat','chiot','croquettes','veto','veterinaire','toilettage','promener',
+    'promenade','laisse','vaccin chien','pension','panier','collier','antipuce','education canine'],
   exterieur:['jardin','tondre','haie','terrasse','piscine','voiture','pneus','revision','vidange',
-    'lavage','garage voiture','plantes','chien','chat','croquettes','promener','veto','toilettage']
+    'lavage','garage voiture','plantes','arroser','elagage','cloture']
 };
 function detectCat(t){
   let best=null, sc=0;
