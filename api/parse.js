@@ -25,12 +25,17 @@ Catégories : ${JSON.stringify(contexte.categories)}
 NOTRE MONDE — ce qu'ils t'ont raconté de leur vie. Sers-t'en pour comprendre de qui et de quoi on parle :
 ${contexte.foyer || '(rien de renseigné pour le moment)'}
 
+TÂCHES EN COURS (pour reconnaître une mise à jour) :
+${JSON.stringify(contexte.taches || [])}
+
 RÈGLES
 1. Un message peut contenir plusieurs tâches : sépare-les. Une idée = une tâche.
 2. titre : court et actionnable, 80 caractères max, commençant par un verbe ("Appeler le plombier"). Garde ses mots.
 3. categorie : l'id exact de la liste. Appuie-toi sur NOTRE MONDE : un prénom qui n'est pas l'un des deux utilisateurs est un proche (enfant, filleul, frère, neveu) et relève de "famille" ; l'animal du foyer relève de "exterieur" ; le lieu de la maison relève de "maison". Ne mets "maison" par défaut que si rien d'autre ne colle.
 4. priorite : 1 si urgent ou bloquant, 3 si c'est un "un jour", 2 sinon.
-5. echeance : AAAA-MM-JJ calculée depuis la date du jour ("demain", "samedi", "avant la fin du mois"). null si rien n'est dit.
+5. echeance : AAAA-MM-JJ calculée depuis la date du jour ("demain", "samedi", "le 25 septembre"). null si rien n'est dit.
+5 bis. heure : "HH:MM" sur 24 h si un horaire est dit ("15h30", "à 9h", "quinze heures trente" → "15:30", "09:00"). null sinon.
+5 ter. maj_id : compare le message aux TÂCHES EN COURS. S'il complète ou fait aboutir l'une d'elles plutôt que d'en créer une nouvelle, mets son id dans maj_id et renseigne uniquement ce qui change. Exemple : la tâche "Prendre rendez-vous chez le vétérinaire pour Zouzou" existe, et le message est "j'ai pris rendez-vous le 25 septembre à 15h30 chez le véto" → maj_id = l'id de cette tâche, echeance et heure renseignées, statut "En cours". Sois exigeant : n'utilise maj_id que si le sujet est manifestement le même. Dans le doute, crée une tâche neuve et laisse maj_id à null.
 6. assigne_id : uniquement si un prénom des DEUX utilisateurs est cité comme devant s'en occuper ("Louis doit…", "pour Louis", "voir avec Louis"), ou si la personne parle d'elle-même ("je dois", "je m'en occupe"). Dans le doute, laisse null : il vaut mieux une tâche non attribuée qu'attribuée à tort. Un prénom de proche (enfant, neveu, ami) n'est JAMAIS un assigne_id. Si la personne parle d'elle-même ("je dois", "je m'en occupe"), mets son propre id. Sinon null.
 7. prive : true seulement si elle dit que c'est personnel ("perso", "pour moi seule"). Par défaut false : dans un couple, l'organisation est partagée.
 8. description : uniquement le contexte réellement dicté, sinon null.
@@ -38,7 +43,7 @@ RÈGLES
 10. Repères de classement : acheter, prendre, commander, aller chercher quelque chose de consommable (nourriture, produits, croquettes) = "courses". Un rendez-vous ou un horaire à honorer = "rdv". Ce qui concerne l'enfant, la crèche, l'école, la garde, la famille élargie = "famille". Tout ce qui touche l'animal du foyer — nourriture, vétérinaire, toilettage, promenade, garde — = "animaux", même quand il s'agit d'un achat. Le jardin et la voiture = "exterieur". Réserve "maison" à la maison elle-même : travaux, réparations, entretien, ménage, équipement.
 
 Réponds UNIQUEMENT par un JSON valide, sans balise de code :
-{"sujets":[{"titre":"","categorie":"maison","priorite":2,"statut":"À faire","echeance":null,"assigne_id":null,"prive":false,"description":null,"actions":[]}]}`;
+{"sujets":[{"titre":"","categorie":"maison","priorite":2,"statut":"À faire","echeance":null,"heure":null,"maj_id":null,"assigne_id":null,"prive":false,"description":null,"actions":[]}]}`;
 
   try {
     const r = await fetch('https://api.anthropic.com/v1/messages', {
