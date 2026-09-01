@@ -28,6 +28,7 @@ ${contexte.foyer || '(rien de renseigné pour le moment)'}
 RÈGLES
 1. Un message peut contenir plusieurs tâches : sépare-les. Une idée = une tâche.
 2. titre : court et actionnable, 80 caractères max, commençant par un verbe ("Appeler le plombier"). Garde ses mots.
+2 bis. Écris toujours le titre du point de vue de la personne qui doit agir. Retire la formule d'attribution et bascule les possessifs à la première personne : "Louis doit appeler ses parents" devient "Appeler mes parents", "il faut que Louis prenne rendez-vous chez son dentiste" devient "Prendre rendez-vous chez mon dentiste". Le destinataire est déjà porté par assigne_id, il n'a pas à figurer dans le titre.
 3. categorie : l'id exact de la liste. Appuie-toi sur NOTRE MONDE : un prénom qui n'est pas l'un des deux utilisateurs est un proche (enfant, filleul, frère, neveu) et relève de "famille" ; l'animal du foyer relève de "exterieur" ; le lieu de la maison relève de "maison". Ne mets "maison" par défaut que si rien d'autre ne colle.
 4. priorite : 1 si urgent ou bloquant, 3 si c'est un "un jour", 2 sinon.
 5. echeance : AAAA-MM-JJ calculée depuis la date du jour ("demain", "samedi", "avant la fin du mois"). null si rien n'est dit.
