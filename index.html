@@ -248,6 +248,12 @@ textarea{min-height:76px;resize:vertical;font-size:15px}
   <div class="hd"><h2 id="item-h">Nouveau sujet</h2><button onclick="closeSheet('sh-item')">Fermer</button></div>
   <label>Quoi</label>
   <input id="f-titre" placeholder="Ex : appeler le plombier">
+  <label>Étapes</label>
+  <div class="acts" id="f-actions"></div>
+  <div class="row" style="margin-top:8px">
+    <input id="f-newact" placeholder="Ajouter une étape">
+    <button class="tab" style="flex:0 0 auto" onclick="addAction()">Ajouter</button>
+  </div>
   <div class="row">
     <div><label>Catégorie</label><select id="f-cat"></select></div>
     <div><label>À faire</label><select id="f-echeance"></select></div>
@@ -264,12 +270,6 @@ textarea{min-height:76px;resize:vertical;font-size:15px}
   </div>
   <label>Détail</label>
   <textarea id="f-desc" placeholder="Ce qu'il faut savoir…"></textarea>
-  <label>Étapes</label>
-  <div class="acts" id="f-actions"></div>
-  <div class="row" style="margin-top:8px">
-    <input id="f-newact" placeholder="Ajouter une étape">
-    <button class="tab" style="flex:0 0 auto" onclick="addAction()">Ajouter</button>
-  </div>
   <button class="btn" onclick="saveItem()">Enregistrer</button>
   <button class="btn sec" id="b-clore" onclick="cloreItem()">C'est fait</button>
   <button class="btn del" id="b-suppr" onclick="delItem()">Supprimer</button>
