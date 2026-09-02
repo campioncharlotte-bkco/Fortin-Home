@@ -848,9 +848,18 @@ function openItem(id,privDefaut,assigneDefaut){
 function renderActions(){
   $('f-actions').innerHTML = S.actions.length? S.actions.map((a,i)=>
     `<div class="act ${a.fait?'done':''}">
-      <input type="checkbox" ${a.fait?'checked':''} onchange="S.actions[${i}].fait=this.checked;renderActions()">
+      <input type="checkbox" ${a.fait?'checked':''} onchange="S.actions[${i}].fait=this.checked;renderActions();verifEtapes()">
       <span>${esc(a.texte)}</span><button onclick="S.actions.splice(${i},1);renderActions()">✕</button>
      </div>`).join('') : '<div class="muted">Découpe en étapes si besoin.</div>';
+}
+/* Dernière étape cochée : on propose de clore la tâche, on ne le fait pas d'office. */
+function verifEtapes(){
+  if(!S.actions.length || !S.actions.every(a=>a.fait)) return;
+  if(segVal('f-statut')==='Fait') return;
+  if(confirm("Toutes les étapes sont faites.\n\nMarquer la tâche comme faite ?")){
+    seg('f-statut', STATUTS.map(s=>({v:s,l:s})), 'Fait');
+    toast('Statut passé à Fait — enregistre pour valider');
+  }
 }
 function addAction(){ const v=$('f-newact').value.trim(); if(!v) return;
   S.actions.push({texte:v,fait:false}); $('f-newact').value=''; renderActions(); }
