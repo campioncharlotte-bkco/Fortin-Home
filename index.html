@@ -135,8 +135,6 @@ h1,h2{font-weight:700;letter-spacing:-.01em}
   background:var(--card);border:1px solid var(--line)}
 .saisie button{flex:0 0 48px;height:48px;border-radius:50%;background:var(--kaki);color:#fff;font-size:19px;
   display:flex;align-items:center;justify-content:center}
-.saisie button.mic{background:var(--card);border:1px solid var(--line);color:var(--ink-2)}
-.saisie button.mic.rec{background:var(--close);border-color:var(--close);color:#fff}
 
 /* ---- Formulaire ---- */
 .sheet{position:fixed;inset:0;z-index:90;background:rgba(42,38,34,.45);display:none;align-items:flex-end}
@@ -210,7 +208,6 @@ textarea{min-height:76px;resize:vertical;font-size:15px}
   <section class="screen" id="s-capture">
     <div id="chat-flux"></div>
     <div class="saisie">
-      <button class="mic" id="btn-mic" onclick="dicter()" aria-label="Dicter">🎙</button>
       <textarea id="msg" rows="1" placeholder="Dis ce que tu as en tête…"></textarea>
       <button onclick="envoyer()" aria-label="Envoyer">↑</button>
     </div>
@@ -647,27 +644,6 @@ async function envoyer(){
 $('msg').addEventListener('input',e=>{ e.target.style.height='48px';
   e.target.style.height=Math.min(e.target.scrollHeight,140)+'px'; });
 $('msg').addEventListener('keydown',e=>{ if(e.key==='Enter'&&(e.metaKey||e.ctrlKey)) envoyer(); });
-
-let reco=null;
-async function dicter(){
-  const R=window.SpeechRecognition||window.webkitSpeechRecognition;
-  if(!R){ toast("Utilise le micro de ton clavier"); $('msg').focus(); return; }
-  if(reco){ try{ reco.stop(); }catch(e){} return; }
-  try{
-    if(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia){
-      const f=await navigator.mediaDevices.getUserMedia({audio:true}); f.getTracks().forEach(t=>t.stop());
-    }
-  }catch(e){ toast('Micro bloqué : autorise-le pour ce site'); return; }
-  reco=new R(); reco.lang='fr-FR'; reco.interimResults=true; reco.continuous=false;
-  const base=$('msg').value.trim();
-  reco.onstart=()=>{ $('btn-mic').classList.add('rec'); toast("Je t'écoute…"); };
-  reco.onresult=e=>{ let s=''; for(let k=0;k<e.results.length;k++) s+=e.results[k][0].transcript;
-    $('msg').value=(base?base+' ':'')+s; $('msg').dispatchEvent(new Event('input')); };
-  reco.onerror=ev=>{ const m={'not-allowed':'Micro refusé','no-speech':"Je n'ai rien entendu",
-    'audio-capture':'Aucun micro','network':'Connexion requise'}; toast(m[ev.error]||('Dictée : '+ev.error)); };
-  reco.onend=()=>{ reco=null; $('btn-mic').classList.remove('rec'); };
-  try{ reco.start(); }catch(e){ reco=null; toast('Dictée impossible'); }
-}
 
 /* ============================================================
    9. LE POINT
